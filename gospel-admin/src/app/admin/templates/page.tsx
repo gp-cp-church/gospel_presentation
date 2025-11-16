@@ -394,20 +394,18 @@ function TemplatesPageContent() {
                     </div>
 
                     <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Link
-                          href={`/${template.slug}`}
-                          target="_blank"
-                          className="text-slate-600 hover:text-slate-800 text-xs sm:text-sm font-medium bg-white hover:bg-slate-50 px-2 sm:px-3 py-1 rounded-lg border border-slate-200 hover:border-slate-300 transition-all duration-200 shadow-sm hover:shadow-md"
-                        >
-                          View
-                        </Link>
-                        
-                        {/* Only show share button for admins */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Link
+                        href={`/${template.slug}`}
+                        target="_blank"
+                        className="text-slate-700 hover:text-slate-800 text-xs sm:text-sm font-medium bg-slate-100 hover:bg-slate-200 px-2 sm:px-3 py-1 rounded-lg border border-slate-300 hover:border-slate-400 transition-all duration-200 shadow-sm hover:shadow-md"
+                      >
+                        View
+                      </Link>                        {/* Only show share button for admins */}
                         {userRole === 'admin' && (
                           <button
                             onClick={() => handleCopyProfileUrl(template)}
-                            className="text-slate-600 hover:text-slate-800 text-xs sm:text-sm font-medium bg-white hover:bg-slate-50 px-2 sm:px-3 py-1 rounded-lg border border-slate-200 hover:border-slate-300 transition-all duration-200 shadow-sm hover:shadow-md"
+                            className="text-slate-700 hover:text-slate-800 text-xs sm:text-sm font-medium bg-slate-100 hover:bg-slate-200 px-2 sm:px-3 py-1 rounded-lg border border-slate-300 hover:border-slate-400 transition-all duration-200 shadow-sm hover:shadow-md"
                           >
                             Share
                           </button>
@@ -418,14 +416,14 @@ function TemplatesPageContent() {
                           <>
                             <Link
                               href={`/admin/profiles/${template.slug}`}
-                              className="bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-700 px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-slate-200 hover:border-slate-300"
+                              className="bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-blue-200 hover:border-blue-300"
                             >
                               Settings
                             </Link>
                             
                             <Link
                               href={`/admin/profiles/${template.slug}/content`}
-                              className="bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-700 px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-slate-200 hover:border-slate-300"
+                              className="bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm transition-all duration-200 font-medium shadow-sm hover:shadow-md border border-blue-200 hover:border-blue-300"
                             >
                               Edit
                             </Link>
@@ -433,7 +431,7 @@ function TemplatesPageContent() {
                             {!template.isDefault && (
                               <button
                                 onClick={() => handleDeleteProfile(template.slug, template.title)}
-                                className="text-slate-600 hover:text-slate-800 text-xs sm:text-sm font-medium bg-white hover:bg-slate-50 px-2 sm:px-3 py-1 rounded-lg border border-slate-200 hover:border-slate-300 transition-all duration-200 shadow-sm hover:shadow-md"
+                                className="text-red-700 hover:text-red-800 text-xs sm:text-sm font-medium bg-red-50 hover:bg-red-100 px-2 sm:px-3 py-1 rounded-lg border border-red-200 hover:border-red-300 transition-all duration-200 shadow-sm hover:shadow-md"
                               >
                                 Delete
                               </button>
@@ -447,13 +445,13 @@ function TemplatesPageContent() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <button
                             onClick={() => handleDownloadBackup(template)}
-                            className="bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-700 px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md border border-slate-200 hover:border-slate-300"
+                            className="bg-green-50 hover:bg-green-100 text-green-700 hover:text-green-800 px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md border border-green-200 hover:border-green-300"
                             title="Download template backup"
                           >
                             Download Backup
                           </button>
                           
-                          <label className="bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-700 px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md border border-slate-200 hover:border-slate-300 cursor-pointer">
+                          <label className="bg-green-50 hover:bg-green-100 text-green-700 hover:text-green-800 px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md border border-green-200 hover:border-green-300 cursor-pointer">
                             Upload & Restore
                             <input
                               type="file"
