@@ -75,6 +75,7 @@ function AdminPageContent() {
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
   const [isRestoringNew, setIsRestoringNew] = useState(false)
   const [availableUsers, setAvailableUsers] = useState<Array<{ email: string; role: string }>>([])
+  const [selectedCounselee, setSelectedCounselee] = useState<string>('')
 
   // Monitor session and auto-logout on expiration
   useSessionMonitor({
@@ -709,6 +710,13 @@ function AdminPageContent() {
     // Exclude all template profiles - they only show in the templates page
     if (profile.isTemplate) return false
     
+    // Apply counselee/counselor filter
+    if (selectedCounselee) {
+      // Check if the selected person is in the counseleeEmails array
+      const hasCounselee = profile.counseleeEmails?.includes(selectedCounselee)
+      if (!hasCounselee) return false
+    }
+    
     // Apply search filter
     if (!searchQuery.trim()) return true
     
@@ -720,6 +728,15 @@ function AdminPageContent() {
       profile.ownerDisplayName?.toLowerCase().includes(query)
     )
   })
+
+  // Get unique list of counselees/counselors who have profiles assigned to them
+  const counseleesWithProfiles = Array.from(
+    new Set(
+      profiles
+        .filter(p => !p.isTemplate && p.counseleeEmails && p.counseleeEmails.length > 0)
+        .flatMap(p => p.counseleeEmails)
+    )
+  ).sort()
 
   if (isLoading) {
     return (
@@ -869,13 +886,31 @@ function AdminPageContent() {
                     </button>
                   )}
                 </div>
+                
+                {/* Counselee Filter Dropdown */}
+                {counseleesWithProfiles.length > 0 && (
+                  <select
+                    value={selectedCounselee}
+                    onChange={(e) => setSelectedCounselee(e.target.value)}
+                    className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 text-sm text-slate-900 bg-white shadow-sm transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10 min-w-[200px]"
+                  >
+                    <option value="">All Counselees</option>
+                    {counseleesWithProfiles.map(email => (
+                      <option key={email} value={email}>
+                        {email}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                
                 {filteredProfiles.length > 0 && (
                   <ViewToggle view={view} onViewChange={setView} />
                 )}
               </div>
-              {searchQuery && (
+              {(searchQuery || selectedCounselee) && (
                 <p className="text-xs text-slate-500 mt-2">
-                  Found {filteredProfiles.length} of {profiles.length} profile{filteredProfiles.length !== 1 ? 's' : ''}
+                  Found {filteredProfiles.length} of {profiles.filter(p => !p.isTemplate).length} profile{filteredProfiles.length !== 1 ? 's' : ''}
+                  {selectedCounselee && ` for ${selectedCounselee}`}
                 </p>
               )}
             </div>
