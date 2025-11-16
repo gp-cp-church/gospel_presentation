@@ -304,21 +304,71 @@ function AdminPageContent() {
     }))
   }
 
+  const handleCloneFromChange = (cloneFromSlug: string) => {
+    // Find the selected profile to auto-populate title and description
+    const selectedProfile = profiles.find(p => p.slug === cloneFromSlug)
+    
+    if (selectedProfile) {
+      setCreateForm(prev => ({
+        ...prev,
+        cloneFromSlug,
+        title: selectedProfile.title,
+        description: selectedProfile.description || ''
+      }))
+    } else {
+      setCreateForm(prev => ({
+        ...prev,
+        cloneFromSlug
+      }))
+    }
+  }
+
   const handleAddCounseleeEmail = () => {
     const email = counseleeEmailInput.trim().toLowerCase()
     if (email && email.includes('@') && !createForm.counseleeEmails.includes(email)) {
+      const updatedEmails = [...createForm.counseleeEmails, email]
+      const emailList = updatedEmails.join(', ')
+      
+      // Extract the original description (without the "For:" prefix if it exists)
+      let baseDescription = createForm.description
+      if (createForm.description.startsWith('For: ')) {
+        const match = createForm.description.match(/^For: .*?\n\n(.*)$/s)
+        baseDescription = match ? match[1] : createForm.description
+      }
+      
+      // Build new description with updated email list
+      const newDescription = `For: ${emailList}\n\n${baseDescription}`
+      
       setCreateForm(prev => ({
         ...prev,
-        counseleeEmails: [...prev.counseleeEmails, email]
+        counseleeEmails: updatedEmails,
+        description: newDescription
       }))
       setCounseleeEmailInput('')
     }
   }
 
   const handleRemoveCounseleeEmail = (email: string) => {
+    const updatedEmails = createForm.counseleeEmails.filter(e => e !== email)
+    
+    // Extract the original description (without the "For:" prefix)
+    let baseDescription = createForm.description
+    if (createForm.description.startsWith('For: ')) {
+      const match = createForm.description.match(/^For: .*?\n\n(.*)$/s)
+      baseDescription = match ? match[1] : createForm.description
+    }
+    
+    // Build new description with updated email list
+    let newDescription = baseDescription
+    if (updatedEmails.length > 0) {
+      const emailList = updatedEmails.join(', ')
+      newDescription = `For: ${emailList}\n\n${baseDescription}`
+    }
+    
     setCreateForm(prev => ({
       ...prev,
-      counseleeEmails: prev.counseleeEmails.filter(e => e !== email)
+      counseleeEmails: updatedEmails,
+      description: newDescription
     }))
   }
 
@@ -835,54 +885,21 @@ function AdminPageContent() {
               <h3 className="text-base sm:text-lg font-semibold bg-gradient-to-br from-slate-700 to-slate-800 bg-clip-text text-transparent mb-4">Create New Profile</h3>
               
               <form onSubmit={handleCreateProfile} className="space-y-4">
-                <div>
-                  <label htmlFor="title" className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">
-                    Profile Title *
-                  </label>
-                  <input
-                    type="text"
-                    id="title"
-                    value={createForm.title}
-                    onChange={(e) => handleTitleChange(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 text-slate-900 bg-white shadow-sm text-sm transition-all"
-                    placeholder="e.g., Youth Group Presentation"
-                    required
-                    maxLength={50}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="description" className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">
-                    Description *
-                  </label>
-                  <textarea
-                    id="description"
-                    value={createForm.description}
-                    onChange={(e) => setCreateForm(prev => ({ ...prev, description: e.target.value }))}
-                    className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 text-slate-900 bg-white shadow-sm text-sm transition-all resize-y"
-                    placeholder="Describe this profile..."
-                    rows={3}
-                    maxLength={200}
-                    required
-                  />
-                </div>
-
+                {/* Clone From Field - FIRST */}
                 <div>
                   <label htmlFor="cloneFrom" className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">
-                    Clone From
+                    Clone From *
                   </label>
                   <select
                     id="cloneFrom"
                     value={createForm.cloneFromSlug}
-                    onChange={(e) => setCreateForm(prev => ({ ...prev, cloneFromSlug: e.target.value }))}
+                    onChange={(e) => handleCloneFromChange(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 text-slate-900 bg-white shadow-sm text-sm transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
                   >
                     {profiles.filter(p => {
-                      // Admin can clone from any template or any profile
                       if (userRole === 'admin') {
                         return p.isTemplate || !p.isTemplate
                       }
-                      // Counselor can clone from templates or their own profiles
                       return p.isTemplate || p.createdBy === user?.id
                     }).map(profile => (
                       <option key={profile.slug} value={profile.slug}>
@@ -898,22 +915,7 @@ function AdminPageContent() {
                   </p>
                 </div>
 
-                {userRole === 'admin' && (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="isTemplate"
-                      checked={createForm.isTemplate}
-                      onChange={(e) => setCreateForm(prev => ({ ...prev, isTemplate: e.target.checked }))}
-                      className="w-4 h-4 text-slate-600 border-slate-300 rounded focus:ring-slate-400"
-                    />
-                    <label htmlFor="isTemplate" className="text-xs sm:text-sm font-medium text-slate-700">
-                      Make this a template profile (editable only by admins, visible to all users)
-                    </label>
-                  </div>
-                )}
-
-                {/* Counselee Email Invites */}
+                {/* Counselee Email Invites - SECOND */}
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-2">
                     Invite Counselees (Optional)
@@ -983,6 +985,55 @@ function AdminPageContent() {
                     </div>
                   )}
                 </div>
+
+                {/* Profile Title - THIRD */}
+                <div>
+                  <label htmlFor="title" className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">
+                    Profile Title *
+                  </label>
+                  <input
+                    type="text"
+                    id="title"
+                    value={createForm.title}
+                    onChange={(e) => handleTitleChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 text-slate-900 bg-white shadow-sm text-sm transition-all"
+                    placeholder="e.g., Youth Group Presentation"
+                    required
+                    maxLength={50}
+                  />
+                </div>
+
+                {/* Profile Description - FOURTH */}
+                <div>
+                  <label htmlFor="description" className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">
+                    Description *
+                  </label>
+                  <textarea
+                    id="description"
+                    value={createForm.description}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, description: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 text-slate-900 bg-white shadow-sm text-sm transition-all resize-y"
+                    placeholder="Describe this profile..."
+                    rows={3}
+                    maxLength={200}
+                    required
+                  />
+                </div>
+
+                {userRole === 'admin' && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="isTemplate"
+                      checked={createForm.isTemplate}
+                      onChange={(e) => setCreateForm(prev => ({ ...prev, isTemplate: e.target.checked }))}
+                      className="w-4 h-4 text-slate-600 border-slate-300 rounded focus:ring-slate-400"
+                    />
+                    <label htmlFor="isTemplate" className="text-xs sm:text-sm font-medium text-slate-700">
+                      Make this a template profile (editable only by admins, visible to all users)
+                    </label>
+                  </div>
+                )}
 
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <button
