@@ -333,8 +333,10 @@ function AdminPageContent() {
       // Extract the original description (without the "For:" prefix if it exists)
       let baseDescription = createForm.description
       if (createForm.description.startsWith('For: ')) {
-        const match = createForm.description.match(/^For: .*?\n\n(.*)$/s)
-        baseDescription = match ? match[1] : createForm.description
+        const forEndIndex = createForm.description.indexOf('\n\n')
+        if (forEndIndex !== -1) {
+          baseDescription = createForm.description.substring(forEndIndex + 2)
+        }
       }
       
       // Build new description with updated email list
@@ -355,8 +357,10 @@ function AdminPageContent() {
     // Extract the original description (without the "For:" prefix)
     let baseDescription = createForm.description
     if (createForm.description.startsWith('For: ')) {
-      const match = createForm.description.match(/^For: .*?\n\n(.*)$/s)
-      baseDescription = match ? match[1] : createForm.description
+      const forEndIndex = createForm.description.indexOf('\n\n')
+      if (forEndIndex !== -1) {
+        baseDescription = createForm.description.substring(forEndIndex + 2)
+      }
     }
     
     // Build new description with updated email list
@@ -888,7 +892,7 @@ function AdminPageContent() {
                 </div>
                 
                 {/* Counselee Filter Dropdown */}
-                {counseleesWithProfiles.length > 0 && (
+                {counseleesWithProfiles.length > 0 && userRole !== 'counselee' && (
                   <select
                     value={selectedCounselee}
                     onChange={(e) => setSelectedCounselee(e.target.value)}

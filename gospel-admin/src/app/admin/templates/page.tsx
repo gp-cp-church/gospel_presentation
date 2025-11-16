@@ -205,18 +205,24 @@ function TemplatesPageContent() {
     router.push('/login')
   }
 
-  // Filter templates based on search query
-  const filteredTemplates = templates.filter(template => {
-    if (!searchQuery.trim()) return true
-    
-    const query = searchQuery.toLowerCase()
-    return (
-      template.title?.toLowerCase().includes(query) ||
-      template.slug?.toLowerCase().includes(query) ||
-      template.description?.toLowerCase().includes(query) ||
-      template.ownerDisplayName?.toLowerCase().includes(query)
-    )
-  })
+  // Filter templates based on search query and sort by description A-Z
+  const filteredTemplates = templates
+    .filter(template => {
+      if (!searchQuery.trim()) return true
+      
+      const query = searchQuery.toLowerCase()
+      return (
+        template.title?.toLowerCase().includes(query) ||
+        template.slug?.toLowerCase().includes(query) ||
+        template.description?.toLowerCase().includes(query) ||
+        template.ownerDisplayName?.toLowerCase().includes(query)
+      )
+    })
+    .sort((a, b) => {
+      const descA = (a.description || '').toLowerCase()
+      const descB = (b.description || '').toLowerCase()
+      return descA.localeCompare(descB)
+    })
 
   if (isLoading) {
     return (
