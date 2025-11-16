@@ -9,6 +9,7 @@ import Link from 'next/link'
 interface UserProfile {
   id: string
   email: string
+  username?: string
   role: 'admin' | 'counselor' | 'counselee'
   created_at: string
   last_sign_in?: string
@@ -21,9 +22,13 @@ export default function UsersPage() {
   const [currentUserRole, setCurrentUserRole] = useState<'admin' | 'counselor' | null>(null)
   const [showNewUserModal, setShowNewUserModal] = useState(false)
   const [newUserEmail, setNewUserEmail] = useState('')
+  const [newUserName, setNewUserName] = useState('')
   const [newUserRole, setNewUserRole] = useState<'admin' | 'counselor' | 'counselee'>('counselor')
   const [isCreatingUser, setIsCreatingUser] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [editingCounselee, setEditingCounselee] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState('')
+
 
   useEffect(() => {
     loadUsers()
@@ -77,6 +82,7 @@ export default function UsersPage() {
       const mappedUsers: UserProfile[] = profiles.map((profile: any) => ({
         id: profile.id,
         email: profile.display_name || 'Unknown',
+        username: profile.username,
         role: profile.role,
         created_at: profile.created_at,
         last_sign_in: profile.updated_at
@@ -119,6 +125,11 @@ export default function UsersPage() {
       return
     }
 
+    if (!newUserName.trim()) {
+      alert('Please enter a name')
+      return
+    }
+
     setIsCreatingUser(true)
     
     try {
@@ -130,6 +141,7 @@ export default function UsersPage() {
         body: JSON.stringify({
           email: newUserEmail,
           role: newUserRole,
+          username: newUserName.trim(),
         }),
       })
 
@@ -143,6 +155,7 @@ export default function UsersPage() {
       
       // Reset form
       setNewUserEmail('')
+      setNewUserName('')
       setNewUserRole('counselor')
       setShowNewUserModal(false)
       
@@ -197,6 +210,27 @@ export default function UsersPage() {
     }
   }
 
+  const handleUpdateCounseeleeName = async (userId: string, newName: string) => {
+    try {
+      const supabase = createClient()
+      
+      const { error } = await supabase
+        .from('user_profiles')
+        // @ts-expect-error - Supabase type inference issue
+        .update({ username: newName || null })
+        .eq('id', userId)
+      
+      if (error) throw error
+      
+      logger.info(`Updated name for user ${userId}`)
+      setEditingCounselee(null)
+      await loadUsers()
+    } catch (err: any) {
+      logger.error('Failed to update name:', err)
+      alert(`Failed to update name: ${err.message}`)
+    }
+  }
+
   // Only admins can access this page
   if (isLoading && currentUserRole === null) {
     return (
@@ -220,7 +254,7 @@ export default function UsersPage() {
             <p className="font-semibold">Access Denied</p>
             <p className="text-sm mt-1">Only administrators can manage users.</p>
             <Link href="/admin" className="text-sm underline mt-2 inline-block">
-              ← Back to Dashboard
+              ← Back
             </Link>
           </div>
         </div>
@@ -244,18 +278,18 @@ export default function UsersPage() {
                 </p>
               </div>
               <div className="flex gap-3">
-                <button
-                  onClick={() => setShowNewUserModal(true)}
-                  className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-700 border border-slate-200 hover:border-slate-300 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md"
-                >
-                  + New User
-                </button>
                 <Link
                   href="/admin"
                   className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-700 border border-slate-200 hover:border-slate-300 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md font-medium"
                 >
                   ← Back
                 </Link>
+                <button
+                  onClick={() => setShowNewUserModal(true)}
+                  className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-700 border border-slate-200 hover:border-slate-300 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md cursor-pointer"
+                >
+                  + New User
+                </button>
               </div>
             </div>
           </div>
@@ -281,7 +315,7 @@ export default function UsersPage() {
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -315,6 +349,9 @@ export default function UsersPage() {
                       Email
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
                       Role
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
@@ -328,7 +365,7 @@ export default function UsersPage() {
                 <tbody className="bg-white divide-y divide-slate-200">
                   {filteredUsers.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-6 py-8 text-center text-slate-500">
+                      <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
                         {searchQuery ? 'No users found matching your search' : 'No users found'}
                       </td>
                     </tr>
@@ -339,6 +376,44 @@ export default function UsersPage() {
                           <div className="text-sm font-medium text-slate-900">
                             {user.email}
                           </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                          {editingCounselee === user.id ? (
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={editingName}
+                                onChange={(e) => setEditingName(e.target.value)}
+                                className="px-2 py-1 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200"
+                                autoFocus
+                              />
+                              <button
+                                onClick={() => handleUpdateCounseeleeName(user.id, editingName)}
+                                className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => setEditingCounselee(null)}
+                                className="text-slate-600 hover:text-slate-800 text-xs font-medium"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between group">
+                              <span>{user.username || user.email}</span>
+                              <button
+                                onClick={() => {
+                                  setEditingCounselee(user.id)
+                                  setEditingName(user.username || '')
+                                }}
+                                className="opacity-0 group-hover:opacity-100 text-amber-500 hover:text-amber-700 text-xs ml-2"
+                              >
+                                ✎
+                              </button>
+                            </div>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <select
@@ -392,7 +467,7 @@ export default function UsersPage() {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">
-                        Email
+                        Email *
                       </label>
                       <input
                         type="email"
@@ -405,6 +480,20 @@ export default function UsersPage() {
                       <p className="text-xs text-slate-500 mt-1">
                         User will receive a login link via email
                       </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                        Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={newUserName}
+                        onChange={(e) => setNewUserName(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-slate-900"
+                        placeholder="e.g., John Smith"
+                        required
+                      />
                     </div>
 
                     <div>
@@ -436,6 +525,7 @@ export default function UsersPage() {
                       onClick={() => {
                         setShowNewUserModal(false)
                         setNewUserEmail('')
+                        setNewUserName('')
                         setNewUserRole('counselor')
                       }}
                       className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-700 border border-slate-200 hover:border-slate-300 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md font-medium"

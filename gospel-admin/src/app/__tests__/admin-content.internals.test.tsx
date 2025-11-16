@@ -40,5 +40,5 @@ test('AdminPageContent renders management heading for admin user', async () => {
   render(<AdminPageContent />)
 
   await waitFor(() => expect(screen.getByTestId('admin-header')).toBeInTheDocument())
-  expect(screen.getByText(/Profile Management/i)).toBeInTheDocument()
+  expect(screen.getByText(/Resource Management/i)).toBeInTheDocument()
 })

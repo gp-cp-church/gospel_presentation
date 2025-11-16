@@ -11,7 +11,8 @@ jest.mock('@/lib/supabase/client', () => ({
     },
     from: (table: string) => ({
       select: () => ({
-        eq: () => ({ single: async () => ({ data: table === 'user_profiles' ? { role: 'admin' } : null }) })
+        eq: () => ({ single: async () => ({ data: table === 'user_profiles' ? { role: 'admin' } : null }) }),
+        order: () => Promise.resolve({ data: [], error: null })
       })
     }),
     storage: { from: () => ({ upload: async () => ({ data: null }), download: async () => ({ data: null }) }) }
@@ -62,7 +63,7 @@ test('renders templates list and shows never visited marker for zero visits', as
   render(React.createElement(TemplatesPage))
 
   // Header and template should render
-  await waitFor(() => expect(screen.findByRole('heading', { name: /Template Profiles/i })).resolves.toBeTruthy())
+  await waitFor(() => expect(screen.findByRole('heading', { name: /Resource Template/i })).resolves.toBeTruthy())
   await waitFor(() => expect(screen.getByText(sampleTemplate.title)).toBeInTheDocument())
 
   // Since visitCount === 0, the 'Never visited' label should be present

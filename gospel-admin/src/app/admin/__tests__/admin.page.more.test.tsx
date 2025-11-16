@@ -8,7 +8,7 @@ describe('AdminPageContent - additional internals', () => {
     // tests will set global.fetch as needed
   })
 
-  test('shows counselee view (My Profiles) when user role is counselee', async () => {
+  test('shows counselee view (My Resources) when user role is counselee', async () => {
     // Use the already-loaded mocked client from jest.setup and override its
     // createClient implementation for this test (avoids resetModules which
     // can force a second React instance to be loaded).
@@ -46,7 +46,7 @@ describe('AdminPageContent - additional internals', () => {
   render(<AdminPageContent />)
 
     // Expect the counselee-specific heading to appear
-    const heading = await screen.findByText(/My Profiles/i)
+    const heading = await screen.findByText(/My Resources/i)
     expect(heading).toBeInTheDocument()
   })
 
@@ -88,15 +88,15 @@ describe('AdminPageContent - additional internals', () => {
   render(<AdminPageContent />)
 
   // Open create form, fill and submit to trigger POST
-  const newBtn = await screen.findByRole('button', { name: /New Profile/i })
+  const newBtn = await screen.findByRole('button', { name: /Assign Resource/i })
   await userEvent.click(newBtn)
 
-  const titleInput = screen.getByLabelText(/Profile Title/i)
-  const descInput = screen.getByLabelText(/Description/i)
+  const titleInput = screen.getByLabelText(/Title \*/)
+  const descInput = screen.getByLabelText(/Description/)
   await userEvent.type(titleInput, 'Duplicate Title')
   await userEvent.type(descInput, 'desc')
 
-  const createBtn = screen.getByRole('button', { name: /Create Profile/i })
+  const createBtn = screen.getByRole('button', { name: /Create Assignment/i })
   await userEvent.click(createBtn)
 
     // Expect duplicate-slug friendly error message to appear

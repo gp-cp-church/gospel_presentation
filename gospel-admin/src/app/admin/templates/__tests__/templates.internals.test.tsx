@@ -29,7 +29,7 @@ test('TemplatesPageContent renders and lists templates', async () => {
 
   render(<TemplatesPageContent />)
 
-  await waitFor(() => expect(screen.getByRole('heading', { name: /Template Profiles/i })).toBeInTheDocument())
+  await waitFor(() => expect(screen.getByRole('heading', { name: /Resource Template/i })).toBeInTheDocument())
   // The template title is rendered as a heading; target the heading specifically to avoid
   // matching the URL text which also contains the template slug.
   expect(screen.getByRole('heading', { name: /T1/i })).toBeInTheDocument()

@@ -33,11 +33,18 @@ export async function POST(request: NextRequest) {
 
     // Get request body
     const body = await request.json()
-    const { email, role } = body
+    const { email, role, username } = body
 
     if (!email) {
       return NextResponse.json(
         { error: 'Email is required' },
+        { status: 400 }
+      )
+    }
+
+    if (!username) {
+      return NextResponse.json(
+        { error: 'Username is required' },
         { status: 400 }
       )
     }
@@ -77,6 +84,7 @@ export async function POST(request: NextRequest) {
         id: newUser.user.id,
         role: role,
         display_name: email,
+        username: username.trim(),
       })
 
     if (profileError) {

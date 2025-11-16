@@ -35,7 +35,7 @@ beforeEach(() => {
       const created = {
         id: 'p-new',
         slug: (body.slug) || 'newslug',
-        title: body.title || 'New Profile',
+        title: body.title || 'Assign Resource',
         description: body.description || '',
         isTemplate: !!body.isTemplate,
         isDefault: false,
@@ -81,30 +81,30 @@ test('AdminPageContent renders profiles list for admin and opens create form', a
   render(<AdminPageContent />)
 
   // Header should show management label for admin
-  await screen.findByText(/Profile Management/i)
+  await screen.findByText(/Resource Management/i)
 
   // The sample profile should render
   await screen.findByText(/Sample Profile/i)
 
   // Open new profile form
-  const newBtn = await screen.findByRole('button', { name: /New Profile/i })
+  const newBtn = await screen.findByRole('button', { name: /Assign Resource/i })
   await userEvent.click(newBtn)
 
   // Create form heading appears
-  await screen.findByText(/Create New Profile/i)
+  await screen.findByText(/Create Assignment/i)
 
   // Fill title and description
-  const titleInput = await screen.findByLabelText(/Profile Title \*/i)
+  const titleInput = await screen.findByLabelText(/Title */)
   const descInput = await screen.findByLabelText(/Description \*/i)
   await userEvent.type(titleInput, 'My Test Profile')
   await userEvent.type(descInput, 'Testing description')
 
   // Submit the form
-  await userEvent.click(screen.getByRole('button', { name: /Create Profile/i }))
+  await userEvent.click(screen.getByRole('button', { name: /Create Assignment/i }))
 
   // Wait for POST to be called
   await waitFor(() => expect((global.fetch as jest.Mock).mock.calls.some(c => typeof c[0] === 'string' && c[0].endsWith('/api/profiles') && c[1] && c[1].method === 'POST')).toBeTruthy())
 
   // After create, the create form should be closed
-  await waitFor(() => expect(screen.queryByText(/Create New Profile/i)).not.toBeInTheDocument())
+  await waitFor(() => expect(screen.queryByText(/Create Assign Resource/i)).not.toBeInTheDocument())
 })

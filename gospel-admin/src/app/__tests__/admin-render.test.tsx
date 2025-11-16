@@ -19,7 +19,10 @@ jest.doMock('@/lib/supabase/client', () => ({
     },
     from: (_table: string) => ({
       select: () => ({
-        eq: (_col: string, _val: any) => ({ single: async () => ({ data: { role: 'admin' }, error: null }) })
+        eq: (_col: string, _val: any) => ({ single: async () => ({ data: { role: 'admin' }, error: null }) }),
+        order: (_col: string, _opts: any) => ({
+          then: (cb: any) => cb({ data: [], error: null })
+        })
       })
     })
   })
@@ -44,5 +47,5 @@ test('admin page mounts and shows profile management heading', async () => {
   render(<AdminPage />)
 
   // Wait for the heading that indicates the management UI is rendered
-  await waitFor(() => expect(screen.getByText(/Profile Management|My Profiles/i)).toBeInTheDocument())
+  await waitFor(() => expect(screen.getByText(/Resource Management|My Resources/i)).toBeInTheDocument())
 })

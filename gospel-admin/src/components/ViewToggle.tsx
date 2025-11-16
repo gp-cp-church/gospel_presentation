@@ -15,7 +15,7 @@ export default function ViewToggle({ view, onViewChange }: ViewToggleProps) {
     <div className="inline-flex items-center gap-1 p-1 bg-slate-100 rounded-lg border border-slate-200">
       <button
         onClick={() => onViewChange('list')}
-        className={`px-2 sm:px-3 py-1.5 rounded text-xs sm:text-sm font-medium transition-all inline-flex items-center gap-1.5 ${
+        className={`px-2 sm:px-3 py-1.5 rounded text-xs sm:text-sm font-medium transition-all inline-flex items-center gap-1.5 cursor-pointer ${
           view === 'list'
             ? 'bg-white text-slate-700 shadow-sm'
             : 'text-slate-600 hover:text-slate-700'
@@ -29,7 +29,7 @@ export default function ViewToggle({ view, onViewChange }: ViewToggleProps) {
       </button>
       <button
         onClick={() => onViewChange('card')}
-        className={`px-2 sm:px-3 py-1.5 rounded text-xs sm:text-sm font-medium transition-all inline-flex items-center gap-1.5 ${
+        className={`px-2 sm:px-3 py-1.5 rounded text-xs sm:text-sm font-medium transition-all inline-flex items-center gap-1.5 cursor-pointer ${
           view === 'card'
             ? 'bg-white text-slate-700 shadow-sm'
             : 'text-slate-600 hover:text-slate-700'

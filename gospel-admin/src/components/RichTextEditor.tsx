@@ -99,7 +99,7 @@ export default function RichTextEditor({
         <button
           onClick={() => editor.chain().focus().toggleBold().run()}
           disabled={!editor.can().chain().focus().toggleBold().run()}
-          className={`px-2 py-1 text-sm font-bold rounded hover:bg-slate-200 transition-colors ${
+          className={`px-2 py-1 text-sm font-bold rounded hover:bg-slate-200 transition-colors cursor-pointer ${
             editor.isActive('bold') ? 'bg-slate-300' : 'bg-white'
           }`}
           title="Bold (Ctrl+B)"
@@ -109,7 +109,7 @@ export default function RichTextEditor({
         <button
           onClick={() => editor.chain().focus().toggleItalic().run()}
           disabled={!editor.can().chain().focus().toggleItalic().run()}
-          className={`px-2 py-1 text-sm italic rounded hover:bg-slate-200 transition-colors ${
+          className={`px-2 py-1 text-sm italic rounded hover:bg-slate-200 transition-colors cursor-pointer ${
             editor.isActive('italic') ? 'bg-slate-300' : 'bg-white'
           }`}
           title="Italic (Ctrl+I)"
@@ -119,7 +119,7 @@ export default function RichTextEditor({
         <button
           onClick={() => editor.chain().focus().toggleStrike().run()}
           disabled={!editor.can().chain().focus().toggleStrike().run()}
-          className={`px-2 py-1 text-sm line-through rounded hover:bg-slate-200 transition-colors ${
+          className={`px-2 py-1 text-sm line-through rounded hover:bg-slate-200 transition-colors cursor-pointer ${
             editor.isActive('strike') ? 'bg-slate-300' : 'bg-white'
           }`}
           title="Strikethrough"
@@ -129,7 +129,7 @@ export default function RichTextEditor({
         <button
           onClick={() => editor.chain().focus().toggleSuperscript().run()}
           disabled={!editor.can().chain().focus().toggleSuperscript().run()}
-          className={`px-2 py-1 text-sm rounded hover:bg-slate-200 transition-colors ${
+          className={`px-2 py-1 text-sm rounded hover:bg-slate-200 transition-colors cursor-pointer ${
             editor.isActive('superscript') ? 'bg-slate-300' : 'bg-white'
           }`}
           title="Superscript"
@@ -139,7 +139,7 @@ export default function RichTextEditor({
         <button
           onClick={() => editor.chain().focus().toggleSubscript().run()}
           disabled={!editor.can().chain().focus().toggleSubscript().run()}
-          className={`px-2 py-1 text-sm rounded hover:bg-slate-200 transition-colors ${
+          className={`px-2 py-1 text-sm rounded hover:bg-slate-200 transition-colors cursor-pointer ${
             editor.isActive('subscript') ? 'bg-slate-300' : 'bg-white'
           }`}
           title="Subscript"
@@ -153,7 +153,7 @@ export default function RichTextEditor({
           <>
             <button
               onClick={() => editor.chain().focus().toggleBulletList().run()}
-              className={`px-2 py-1 text-sm rounded hover:bg-slate-200 transition-colors ${
+              className={`px-2 py-1 text-sm rounded hover:bg-slate-200 transition-colors cursor-pointer ${
                 editor.isActive('bulletList') ? 'bg-slate-300' : 'bg-white'
               }`}
               title="Bullet List"
@@ -162,7 +162,7 @@ export default function RichTextEditor({
             </button>
             <button
               onClick={() => editor.chain().focus().toggleOrderedList().run()}
-              className={`px-2 py-1 text-sm rounded hover:bg-slate-200 transition-colors ${
+              className={`px-2 py-1 text-sm rounded hover:bg-slate-200 transition-colors cursor-pointer ${
                 editor.isActive('orderedList') ? 'bg-slate-300' : 'bg-white'
               }`}
               title="Numbered List"
@@ -245,7 +245,7 @@ export default function RichTextEditor({
         
         <button
           onClick={() => editor.chain().focus().setHardBreak().run()}
-          className="px-2 py-1 text-sm rounded hover:bg-slate-200 transition-colors bg-white"
+          className="px-2 py-1 text-sm rounded hover:bg-slate-200 transition-colors bg-white cursor-pointer"
           title="Line Break (Shift+Enter)"
         >
           ↵ Break

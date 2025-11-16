@@ -3,11 +3,21 @@ import { NextRequest } from 'next/server'
 import * as dataService from '@/lib/supabase-data-service'
 
 jest.mock('@/lib/supabase-data-service')
+jest.mock('@/lib/supabase/server')
 const mockDataService = dataService as jest.Mocked<typeof dataService>
 
 describe('/api/profiles', () => {
   beforeEach(() => {
     jest.resetAllMocks()
+    // Setup default Supabase client mock
+    const { createClient: mockCreateClient } = require('@/lib/supabase/server')
+    mockCreateClient.mockResolvedValue({
+      from: jest.fn(() => ({
+        select: jest.fn(() => ({
+          in: jest.fn(() => Promise.resolve({ data: null, error: null }))
+        }))
+      }))
+    })
   })
 
   describe('GET', () => {

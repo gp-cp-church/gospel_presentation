@@ -95,6 +95,7 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     const email = body.email.trim().toLowerCase()
+    const username = body.username ? body.username.trim() : undefined
 
     // Basic email validation
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -133,6 +134,28 @@ export async function POST(request: Request, context: RouteContext) {
         { error: 'Forbidden: You do not have permission to grant access to this profile' },
         { status: 403 }
       )
+    }
+
+    // If username is provided, update or create user_profile with counselee_name
+    if (username) {
+      const { data: existingUser } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('display_name', email)
+        .single()
+
+      if (existingUser && (existingUser as any).id) {
+        // Update existing user's username
+        await supabase
+          .from('user_profiles')
+          // @ts-expect-error - Supabase type inference issue
+          .update({ username: username })
+          .eq('id', (existingUser as any).id)
+      } else {
+        // For new users, the user_profile will be created by the trigger on auth.users
+        // But we'll set counselee_name when they sign up or via another mechanism
+        // For now, just proceed with grantProfileAccess
+      }
     }
 
     // Grant access

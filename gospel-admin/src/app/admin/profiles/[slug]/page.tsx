@@ -27,11 +27,15 @@ function ProfileEditPage({ params }: ProfileEditPageProps) {
     description: ''
   })
   const [counseleeEmailInput, setCounseleeEmailInput] = useState('')
+  const [usernameInput, setUsernameInput] = useState('')
+  const [isTypingCustomEmail, setIsTypingCustomEmail] = useState(false)
   const [profileAccess, setProfileAccess] = useState<any[]>([])
   const [isLoadingAccess, setIsLoadingAccess] = useState(false)
   const [isAddingCounselee, setIsAddingCounselee] = useState(false)
   const [accessError, setAccessError] = useState('')
-  const [availableUsers, setAvailableUsers] = useState<Array<{ email: string; role: string }>>([])
+  const [availableUsers, setAvailableUsers] = useState<Array<{ email: string; role: string; username?: string }>>([])
+  const [isBackingUp, setIsBackingUp] = useState(false)
+  const [isRestoringBackup, setIsRestoringBackup] = useState(false)
 
   // Check authentication on mount
   useEffect(() => {
@@ -109,7 +113,7 @@ function ProfileEditPage({ params }: ProfileEditPageProps) {
       const supabase = createClient()
       const { data: profiles, error: profilesError } = await supabase
         .from('user_profiles')
-        .select('display_name, role')
+        .select('display_name, role, username')
         .order('display_name', { ascending: true })
       
       if (profilesError) {
@@ -118,10 +122,11 @@ function ProfileEditPage({ params }: ProfileEditPageProps) {
       }
       
       const users = profiles
-        .filter((p: any) => p.display_name) // Only include users with emails
+        .filter((p: any) => p.display_name)
         .map((p: any) => ({
           email: p.display_name,
-          role: p.role
+          role: p.role,
+          username: p.username
         }))
       
       setAvailableUsers(users)
@@ -167,6 +172,12 @@ function ProfileEditPage({ params }: ProfileEditPageProps) {
     e.preventDefault()
     if (!counseleeEmailInput.trim() || !profile) return
 
+    // If typing custom email, require username
+    if (isTypingCustomEmail && !usernameInput.trim()) {
+      setAccessError('Username is required when adding a new email')
+      return
+    }
+
     setIsAddingCounselee(true)
     setAccessError('')
 
@@ -177,12 +188,15 @@ function ProfileEditPage({ params }: ProfileEditPageProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: counseleeEmailInput.trim()
+          email: counseleeEmailInput.trim(),
+          username: usernameInput.trim() || undefined
         })
       })
 
       if (response.ok) {
         setCounseleeEmailInput('')
+        setUsernameInput('')
+        setIsTypingCustomEmail(false)
         await fetchProfileAccess()
       } else {
         const errorData = await response.json().catch(() => ({}))
@@ -220,6 +234,129 @@ function ProfileEditPage({ params }: ProfileEditPageProps) {
     }
   }
 
+  const handleDownloadBackup = async () => {
+    if (!profile) return
+    
+    try {
+      setError('')
+      setIsBackingUp(true)
+      
+      // Fetch the complete profile data (including gospelData)
+      const response = await fetch(`/api/profiles/${slug}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch profile data')
+      }
+      
+      const data = await response.json()
+      const fullProfile = data.profile
+      
+      const backupData = {
+        profile: {
+          id: fullProfile.id,
+          slug: fullProfile.slug,
+          title: fullProfile.title,
+          description: fullProfile.description,
+          isDefault: fullProfile.isDefault,
+          visitCount: fullProfile.visitCount,
+          createdAt: fullProfile.createdAt,
+          updatedAt: fullProfile.updatedAt,
+          lastVisited: fullProfile.lastVisited,
+          lastViewedScripture: fullProfile.lastViewedScripture,
+          gospelData: fullProfile.gospelData
+        },
+        backup: {
+          exportedAt: new Date().toISOString(),
+          exportedBy: 'Gospel Presentation Admin',
+          version: '1.0'
+        }
+      }
+
+      const dataStr = JSON.stringify(backupData, null, 2)
+      const dataBlob = new Blob([dataStr], { type: 'application/json' })
+      
+      const url = URL.createObjectURL(dataBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `gospel-profile-${profile.slug}-backup-${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (err: any) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to download backup'
+      setError(`Backup failed: ${errorMessage}`)
+      alert(`Backup failed: ${errorMessage}`)
+    } finally {
+      setIsBackingUp(false)
+    }
+  }
+
+  const handleRestoreBackup = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !profile) return
+
+    if (!confirm(`Are you sure you want to restore "${profile.title}" from "${file.name}"? This will replace all current content and cannot be undone.`)) {
+      event.target.value = '' // Reset the input
+      return
+    }
+
+    try {
+      setError('')
+      setIsRestoringBackup(true)
+      const fileContent = await file.text()
+      const backupData = JSON.parse(fileContent)
+
+      // Support both new format (with profile object) and old format (with gospelData at root)
+      let dataToRestore
+      if (backupData.profile) {
+        // New format - full profile backup
+        dataToRestore = {
+          title: backupData.profile.title,
+          description: backupData.profile.description,
+          gospelData: backupData.profile.gospelData,
+          lastViewedScripture: backupData.profile.lastViewedScripture
+        }
+      } else if (backupData.gospelData) {
+        // Old format - just gospelData
+        dataToRestore = {
+          gospelData: backupData.gospelData
+        }
+      } else {
+        throw new Error('Invalid backup file format: missing profile or gospelData')
+      }
+
+      // Validate gospelData structure
+      if (!dataToRestore.gospelData || !Array.isArray(dataToRestore.gospelData)) {
+        throw new Error('Invalid backup file format: gospelData must be an array')
+      }
+
+      // Auto-save the restored content
+      const response = await fetch(`/api/profiles/${slug}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToRestore)
+      })
+
+      if (response.ok) {
+        // Refresh profile to show updated data
+        await fetchProfile()
+        alert(`Successfully restored content for "${profile.title}" from "${file.name}"!`)
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to save restored content')
+      }
+    } catch (err: any) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to restore backup'
+      setError(`Restore failed: ${errorMessage}`)
+      alert(`Restore failed: ${errorMessage}`)
+    } finally {
+      setIsRestoringBackup(false)
+      event.target.value = '' // Reset the input
+    }
+  }
+
   if (!isAuth || isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
@@ -243,7 +380,7 @@ function ProfileEditPage({ params }: ProfileEditPageProps) {
               href="/admin"
               className="bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-700 border border-slate-200 hover:border-slate-300 px-4 py-2 rounded-lg transition-colors"
             >
-              Back to Dashboard
+              Back
             </Link>
           </div>
         </div>
@@ -263,9 +400,9 @@ function ProfileEditPage({ params }: ProfileEditPageProps) {
           actions={
             <Link
               href="/admin"
-              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-700 border border-slate-200 hover:border-slate-300 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md font-medium"
             >
-              ← Back to Dashboard
+              ← Back
             </Link>
           }
         />
@@ -278,12 +415,12 @@ function ProfileEditPage({ params }: ProfileEditPageProps) {
 
         {/* Profile Info Card */}
         <div className="bg-white border border-slate-200 rounded-lg p-6 mb-6 shadow-lg">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">Profile Information</h2>
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">Resource Information</h2>
           
           <form onSubmit={handleSaveProfile} className="space-y-4">
             <div>
               <label htmlFor="slug" className="block text-sm font-medium text-slate-700 mb-1">
-                URL Slug
+                URL
               </label>
               <div className="flex">
                 <span className="inline-flex items-center px-3 py-2 rounded-l-lg border border-r-0 border-slate-300 bg-slate-50 text-slate-500 text-sm">
@@ -298,13 +435,13 @@ function ProfileEditPage({ params }: ProfileEditPageProps) {
                 />
               </div>
               <p className="text-xs text-slate-500 mt-1">
-                URL slug cannot be changed after profile creation
+                URL cannot be changed after profile creation
               </p>
             </div>
 
             <div>
               <label htmlFor="title" className="block text-sm font-medium text-slate-700 mb-1">
-                Profile Title *
+                Title *
               </label>
               <input
                 id="title"
@@ -375,39 +512,72 @@ function ProfileEditPage({ params }: ProfileEditPageProps) {
 
           {/* Add Counselee Form */}
           <form onSubmit={handleAddCounselee} className="mb-4">
-            <div className="flex gap-2">
-              <div className="flex-1 grid grid-cols-2 gap-2">
+            <div className="flex gap-2 flex-col">
+              <div className="grid grid-cols-2 gap-2">
                 <select
                   onChange={(e) => {
-                    if (e.target.value && e.target.value !== 'custom') {
+                    if (e.target.value) {
                       setCounseleeEmailInput(e.target.value)
-                    } else if (e.target.value === 'custom') {
+                      // Find the username from available users
+                      const user = availableUsers.find(u => u.email === e.target.value)
+                      setUsernameInput(user?.username || '')
+                      setIsTypingCustomEmail(false)
+                    } else {
                       setCounseleeEmailInput('')
+                      setUsernameInput('')
+                      setIsTypingCustomEmail(false)
                     }
                   }}
                   className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 bg-white text-slate-900 shadow-sm transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10 text-sm"
                   disabled={isAddingCounselee}
                 >
-                  <option value="">Select existing user...</option>
+                  <option value="">Select existing user or type email...</option>
                   {availableUsers.map(user => (
                     <option key={user.email} value={user.email}>
-                      {user.email} ({user.role})
+                      {user.username || user.email} ({user.role})
                     </option>
                   ))}
-                  <option value="custom">--- Type custom email ---</option>
                 </select>
                 <input
                   type="email"
                   value={counseleeEmailInput}
-                  onChange={(e) => setCounseleeEmailInput(e.target.value)}
-                  placeholder="Or type email here..."
+                  onChange={(e) => {
+                    const email = e.target.value
+                    setCounseleeEmailInput(email)
+                    // Show username field if typing something that doesn't match existing user
+                    if (email.trim() && !availableUsers.find(u => u.email === email.trim())) {
+                      setIsTypingCustomEmail(true)
+                    } else {
+                      setIsTypingCustomEmail(false)
+                      // If matches existing user, populate their username
+                      const user = availableUsers.find(u => u.email === email)
+                      if (user) {
+                        setUsernameInput(user.username || '')
+                      }
+                    }
+                  }}
+                  placeholder="Type email here..."
                   className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 text-slate-900 bg-white shadow-sm text-sm transition-colors"
                   disabled={isAddingCounselee}
                 />
               </div>
+
+              {/* Username Field - Show when typing email that doesn't match existing user */}
+              {isTypingCustomEmail && (
+                <input
+                  type="text"
+                  value={usernameInput}
+                  onChange={(e) => setUsernameInput(e.target.value)}
+                  placeholder="Username *"
+                  className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 text-slate-900 bg-white shadow-sm text-sm transition-colors"
+                  disabled={isAddingCounselee}
+                  required={isTypingCustomEmail}
+                />
+              )}
+              
               <button
                 type="submit"
-                disabled={isAddingCounselee || !counseleeEmailInput.trim()}
+                disabled={isAddingCounselee || !counseleeEmailInput.trim() || (isTypingCustomEmail && !usernameInput.trim())}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md whitespace-nowrap"
               >
                 {isAddingCounselee ? 'Adding...' : 'Add'}
@@ -481,6 +651,32 @@ function ProfileEditPage({ params }: ProfileEditPageProps) {
             </div>
           </div>
         )}
+
+        {/* Backup and Restore */}
+        <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-lg">
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">Backup & Restore</h2>
+          <p className="text-sm text-slate-600 mb-4">Download a backup of this profile or restore from a previously saved backup file.</p>
+          
+          <div className="flex gap-3">
+            <button
+              onClick={handleDownloadBackup}
+              disabled={isBackingUp}
+              className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+            >
+              {isBackingUp ? 'Downloading...' : 'Download Backup'}
+            </button>
+            <label className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 cursor-pointer text-center shadow-sm hover:shadow-md whitespace-nowrap">
+              {isRestoringBackup ? 'Restoring...' : 'Restore Backup'}
+              <input
+                type="file"
+                accept=".json"
+                onChange={handleRestoreBackup}
+                disabled={isRestoringBackup}
+                className="hidden"
+              />
+            </label>
+          </div>
+        </div>
       </div>
     </div>
   )

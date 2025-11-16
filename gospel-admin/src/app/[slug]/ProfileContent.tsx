@@ -355,7 +355,7 @@ function ProfileContent({ sections, profileInfo, profile }: ProfileContentProps)
             <div className="flex justify-between items-center gap-3">
               <button
                 onClick={toggleMenu}
-                className="flex items-center gap-3 px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-md transition-colors"
+                className="flex items-center gap-3 px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-md transition-colors cursor-pointer"
               >
                 <div className="flex flex-col gap-1">
                   <div className={`w-5 h-0.5 bg-white transition-transform ${isMenuOpen ? 'rotate-45 translate-y-1.5' : ''}`}></div>

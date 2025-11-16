@@ -243,28 +243,27 @@ function TemplatesPageContent() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-6">
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
-                Template Profiles
+                Resource Template
               </h1>
               <p className="text-xs sm:text-sm text-slate-600 mt-1">
                 {userRole === 'admin' 
-                  ? 'Manage template profiles that can be used to create new profiles' 
-                  : 'View available template profiles'}
+                  ? 'Manage resource templates that can be used to create new resources' 
+                  : 'View available resource templates'}
               </p>
             </div>
             <div className="flex gap-2">
               <Link
                 href="/admin"
-                className="px-2 sm:px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-700 border border-slate-200 hover:border-slate-300 rounded-lg text-xs sm:text-sm font-medium transition-all hover:shadow-md whitespace-nowrap shrink-0 shadow-sm"
+                className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-700 border border-slate-200 hover:border-slate-300 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md font-medium"
               >
-                <span className="hidden sm:inline">← Back to Profiles</span>
-                <span className="sm:hidden">← Profiles</span>
+                ← Back
               </Link>
               <button
                 onClick={handleLogout}
                 className="px-2 sm:px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-700 border border-slate-200 hover:border-slate-300 rounded-lg text-xs sm:text-sm font-medium transition-all hover:shadow-md whitespace-nowrap shrink-0 shadow-sm"
               >
                 <span className="hidden sm:inline">Logout</span>
-                <span className="sm:hidden">Exit</span>
+                <span className="sm:hidden">Logout</span>
               </button>
             </div>
           </div>
@@ -283,7 +282,7 @@ function TemplatesPageContent() {
             <div className="flex-1 min-w-0">
               <h2 className="text-lg sm:text-xl font-semibold bg-gradient-to-br from-slate-700 to-slate-800 bg-clip-text text-transparent">Available Templates</h2>
               <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                Templates that can be used as a starting point for new profiles
+                Templates that can be used as a starting point for new resources
               </p>
             </div>
           </div>
@@ -310,7 +309,7 @@ function TemplatesPageContent() {
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -348,8 +347,6 @@ function TemplatesPageContent() {
                   profile={template}
                   siteUrl={siteUrl}
                   onCopyUrl={handleCopyProfileUrl}
-                  onDownloadBackup={handleDownloadBackup}
-                  onRestoreBackup={handleRestoreBackup}
                   onDelete={handleDeleteProfile}
                   canManage={userRole === 'admin'}
                 />

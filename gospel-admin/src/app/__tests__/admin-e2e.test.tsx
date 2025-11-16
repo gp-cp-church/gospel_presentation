@@ -78,7 +78,7 @@ describe('Admin Authentication E2E Tests', () => {
     await waitFor(() => {
       // Assert the admin interface header is visible. Use the explicit header text
       // shown for admins.
-      expect(screen.getByText('Profile Management')).toBeInTheDocument()
+      expect(screen.getByText('Resource Management')).toBeInTheDocument()
     })
     expect(screen.queryByText('🔐 Admin Access')).not.toBeInTheDocument()
   })
@@ -117,7 +117,7 @@ describe('Admin Authentication E2E Tests', () => {
     render(<AdminPage />)
     
     await waitFor(() => {
-      expect(screen.getByText('Profile Management')).toBeInTheDocument()
+      expect(screen.getByText('Resource Management')).toBeInTheDocument()
     })
   })
 
@@ -167,7 +167,7 @@ describe('Admin Authentication E2E Tests', () => {
     })
     render(<AdminPage />)
     await waitFor(() => {
-      expect(screen.getByText('Profile Management')).toBeInTheDocument()
+      expect(screen.getByText('Resource Management')).toBeInTheDocument()
     })
   })
 
@@ -239,7 +239,7 @@ describe('Admin Session Management', () => {
     })
     render(<AdminPage />)
     await waitFor(() => {
-      expect(screen.getByText('Profile Management')).toBeInTheDocument()
+      expect(screen.getByText('Resource Management')).toBeInTheDocument()
     })
     // Verify that API calls include the session token
     expect(mockFetch).toHaveBeenCalled()
@@ -259,7 +259,7 @@ describe('Admin Session Management', () => {
     
     // Should handle the auth failure gracefully
     await waitFor(() => {
-      expect(screen.getByText('Profile Management')).toBeInTheDocument()
+      expect(screen.getByText('Resource Management')).toBeInTheDocument()
     })
   })
 
@@ -302,7 +302,7 @@ describe('Admin Session Management', () => {
     render(<AdminPage />)
     
     await waitFor(() => {
-      expect(screen.getByText('Profile Management')).toBeInTheDocument()
+      expect(screen.getByText('Resource Management')).toBeInTheDocument()
     })
 
     // Authentication should remain valid during admin operations
@@ -367,10 +367,10 @@ describe('Admin Access Control', () => {
     render(<AdminPage />)
     
     await waitFor(() => {
-      expect(screen.getByText('Profile Management')).toBeInTheDocument()
+      expect(screen.getByText('Resource Management')).toBeInTheDocument()
     })
     // Should show admin interface elements
-    expect(screen.getByText('Profile Management')).toBeInTheDocument()
+    expect(screen.getByText('Resource Management')).toBeInTheDocument()
   })
 
   it('should handle logout functionality', async () => {
@@ -418,7 +418,7 @@ describe('Admin Access Control', () => {
     await waitFor(() => {
       // Target the explicit admin header text to avoid matching other
       // headings like "Profiles".
-      expect(screen.getByText('Profile Management')).toBeInTheDocument()
+      expect(screen.getByText('Resource Management')).toBeInTheDocument()
     })
     // Find and click logout button if it exists
     const logoutButton = screen.queryByText('Logout') || screen.queryByText('Sign Out')

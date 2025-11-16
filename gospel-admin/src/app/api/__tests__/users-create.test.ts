@@ -56,7 +56,7 @@ describe('/api/users/create', () => {
       from: jest.fn().mockReturnValue({ select: jest.fn().mockReturnThis(), eq: jest.fn().mockReturnThis(), single: jest.fn().mockResolvedValue({ data: { role: 'admin' } }) })
     })
 
-    const req = new NextRequest('http://localhost:3000/api/users/create', { method: 'POST', body: JSON.stringify({ email: 'test@example.com', role: 'invalid' }) })
+    const req = new NextRequest('http://localhost:3000/api/users/create', { method: 'POST', body: JSON.stringify({ email: 'test@example.com', username: 'testuser', role: 'invalid' }) })
     const res = await POST(req as any)
     const data = await res.json()
     expect(res.status).toBe(400)
@@ -76,7 +76,7 @@ describe('/api/users/create', () => {
 
     ;(supaServer.createAdminClient as jest.Mock).mockReturnValue(adminMock)
 
-    const body = { email: 'new@example.com', role: 'counselor' }
+    const body = { email: 'new@example.com', username: 'newuser', role: 'counselor' }
     const req = new NextRequest('http://localhost:3000/api/users/create', { method: 'POST', body: JSON.stringify(body) })
     const res = await POST(req as any)
     const data = await res.json()

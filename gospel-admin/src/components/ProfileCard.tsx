@@ -1,15 +1,16 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
 
 interface ProfileCardProps {
   profile: any
   siteUrl: string
   onCopyUrl: (profile: any) => void
-  onDownloadBackup: (profile: any) => void
-  onRestoreBackup: (profile: any, event: React.ChangeEvent<HTMLInputElement>) => void
   onDelete: (slug: string, title: string) => void
   canManage?: boolean
+  showDetails?: boolean
+  onToggleDetails?: () => void
 }
 
 /**
@@ -19,132 +20,169 @@ export default function ProfileCard({
   profile,
   siteUrl,
   onCopyUrl,
-  onDownloadBackup,
-  onRestoreBackup,
   onDelete,
-  canManage = true
+  canManage = true,
+  showDetails: externalShowDetails,
+  onToggleDetails
 }: ProfileCardProps) {
+  const [internalShowDetails, setInternalShowDetails] = useState(false)
+  const showDetails = externalShowDetails !== undefined ? externalShowDetails : internalShowDetails
   const profileUrl = `${siteUrl}/${profile.slug}`
+  // Only show details toggle if a toggle handler is provided
+  const hasDetailsToggle = onToggleDetails !== undefined
 
-  return (
-    <div className="bg-white rounded-lg border border-slate-200 hover:border-slate-300 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col h-full">
-      {/* Header - Clickable to view profile */}
-      <Link href={profileUrl} target="_blank" rel="noopener noreferrer">
-        <div className="p-4 border-b border-slate-100 bg-gradient-to-r from-blue-50 to-slate-50 hover:from-blue-100 hover:to-slate-100 transition-colors cursor-pointer">
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm sm:text-base font-semibold text-slate-900 truncate hover:text-blue-600">
-                {profile.title}
-              </h3>
-              <p className="text-xs text-slate-500 mt-1 truncate">{profile.slug}</p>
-            </div>
+  if (!hasDetailsToggle) {
+    // Counselee view - simple clickable card
+    return (
+      <Link href={profileUrl} target="_blank" rel="noopener noreferrer" className="block group">
+        <div className="bg-white rounded-lg border border-slate-200 hover:border-slate-300 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col h-full hover:bg-slate-50">
+          {/* Header - Title with Blue Background */}
+          <div className="p-4 bg-gradient-to-r from-blue-50 to-slate-50">
+            <h3 className="text-sm sm:text-base font-semibold text-slate-900 group-hover:text-blue-600 truncate transition-colors">
+              {profile.title}
+            </h3>
           </div>
-          
-          {/* Badges */}
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {profile.isDefault && (
-              <span className="bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded-full font-medium">
-                Default
-              </span>
-            )}
-            {profile.isTemplate && (
-              <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full font-medium">
-                Template
-              </span>
+
+          {/* Description */}
+          <div className="flex-1 px-4 pt-4 pb-4 bg-white">
+            {profile.description && (
+              <p className="text-xs sm:text-sm text-slate-600 line-clamp-3">
+                {profile.description}
+              </p>
             )}
           </div>
         </div>
       </Link>
+    )
+  }
 
-      {/* Content */}
-      <div className="flex-1 p-4">
+  return (
+    <div className="bg-white rounded-lg border border-slate-200 hover:border-slate-300 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col h-full">
+      {/* Header - Title with Blue Background */}
+      <Link href={profileUrl} target="_blank" rel="noopener noreferrer">
+        <div className="p-4 bg-gradient-to-r from-blue-50 to-slate-50">
+          <h3 className="text-sm sm:text-base font-semibold text-slate-900 truncate hover:text-blue-600">
+            {profile.title}
+          </h3>
+        </div>
+      </Link>
+
+      {/* Description */}
+      <div className={`flex-1 px-4 pt-4 ${hasDetailsToggle ? 'pb-3' : 'pb-4'} bg-white`}>
         {profile.description && (
-          <p className="text-xs sm:text-sm text-slate-600 line-clamp-3 mb-3">
+          <p className="text-xs sm:text-sm text-slate-600 line-clamp-3">
             {profile.description}
           </p>
         )}
-
-        {/* Metadata */}
-        <div className="space-y-2 text-xs">
-          {profile.ownerDisplayName && (
-            <div className="flex items-center gap-2">
-              <span className="text-slate-500">Owner:</span>
-              <span className="text-slate-700 font-medium truncate">{profile.ownerDisplayName}</span>
-            </div>
-          )}
-          {profile.visitCount !== undefined && (
-            <div className="flex items-center gap-2">
-              <span className="text-slate-500">Views:</span>
-              <span className="text-slate-700 font-medium">{profile.visitCount}</span>
-            </div>
-          )}
-          {profile.updatedAt && (
-            <div className="flex items-center gap-2">
-              <span className="text-slate-500">Updated:</span>
-              <span className="text-slate-700 font-medium">
-                {new Date(profile.updatedAt).toLocaleDateString()}
-              </span>
-            </div>
-          )}
-        </div>
       </div>
 
-      {/* Footer Actions */}
-      <div className="border-t border-slate-100 p-3 bg-slate-50 space-y-2">
-        {canManage && (
-          <div className="flex gap-2">
-            <Link
-              href={`/admin/profiles/${profile.slug}/content`}
-              className="flex-1 block text-center px-2 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 rounded text-xs font-medium transition-colors border border-blue-200 hover:border-blue-300"
-            >
-              Edit
-            </Link>
-            <Link
-              href={`/admin/profiles/${profile.slug}`}
-              className="flex-1 block text-center px-2 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 rounded text-xs font-medium transition-colors border border-blue-200 hover:border-blue-300"
-            >
-              Settings
-            </Link>
-          </div>
-        )}
-
+      {/* Details Toggle Section - Only show if details functionality is enabled */}
+      {hasDetailsToggle && (
         <button
-          onClick={() => onCopyUrl(profile)}
-          className="w-full px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-medium transition-colors border border-slate-300 hover:border-slate-400"
-          title={profileUrl}
+          onClick={() => {
+            if (onToggleDetails) {
+              onToggleDetails()
+            } else {
+              setInternalShowDetails(!internalShowDetails)
+            }
+          }}
+          className="w-full px-4 py-3 bg-gradient-to-r from-blue-50 to-slate-50 hover:from-blue-100 hover:to-slate-100 border-t border-slate-100 transition-colors cursor-pointer flex items-center justify-between"
         >
-          Copy URL
+          <span className="text-xs sm:text-sm font-medium text-slate-700">Details...</span>
+          <span className="text-xs text-slate-500">{showDetails ? '▼' : '▶'}</span>
         </button>
+      )}
 
-        {canManage && (
-          <>
-            <div className="flex gap-2">
-              <button
-                onClick={() => onDownloadBackup(profile)}
-                className="flex-1 px-2 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 hover:text-green-800 rounded text-xs font-medium transition-colors border border-green-200 hover:border-green-300"
-              >
-                Backup
-              </button>
-              <label className="flex-1 px-2 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 hover:text-green-800 rounded text-xs font-medium transition-colors cursor-pointer text-center border border-green-200 hover:border-green-300">
-                Restore
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={(e) => onRestoreBackup(profile, e)}
-                  className="hidden"
-                />
-              </label>
+      {/* Expandable Details Section */}
+      {showDetails && (
+        <div className="px-4 py-3 border-t border-slate-100 space-y-2 text-xs">
+          {/* Badges */}
+          {(profile.isDefault || profile.isTemplate) && (
+            <div className="flex flex-wrap gap-1.5 pb-2 border-b border-slate-100">
+              {profile.isDefault && (
+                <span className="bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded-full font-medium">
+                  Default
+                </span>
+              )}
+              {profile.isTemplate && (
+                <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full font-medium">
+                  Template
+                </span>
+              )}
             </div>
+          )}
+
+          {/* Metadata */}
+          <div className="space-y-2">
+            {profile.ownerUsername && (
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500">Owner:</span>
+                <span className="text-slate-700 font-medium truncate">{profile.ownerUsername}</span>
+              </div>
+            )}
+            {profile.visitCount !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500">Views:</span>
+                <span className="text-slate-700 font-medium">{profile.visitCount}</span>
+              </div>
+            )}
+            {profile.usernames && profile.usernames.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500">Users:</span>
+                <span className="text-slate-700 font-medium truncate">
+                  {profile.usernames.slice(0, 2).join(', ')}
+                  {profile.usernames.length > 2 && ` +${profile.usernames.length - 2}`}
+                </span>
+              </div>
+            )}
+            {profile.updatedAt && (
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500">Updated:</span>
+                <span className="text-slate-700 font-medium">
+                  {new Date(profile.updatedAt).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="pt-3 space-y-2 border-t border-slate-100">
+            {canManage && (
+              <div className="flex gap-2">
+                <Link
+                  href={`/admin/profiles/${profile.slug}/content`}
+                  className="flex-1 block text-center px-2 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 rounded text-xs font-medium transition-colors border border-blue-200 hover:border-blue-300"
+                >
+                  Edit
+                </Link>
+                <Link
+                  href={`/admin/profiles/${profile.slug}`}
+                  className="flex-1 block text-center px-2 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 rounded text-xs font-medium transition-colors border border-blue-200 hover:border-blue-300"
+                >
+                  Settings
+                </Link>
+              </div>
+            )}
 
             <button
-              onClick={() => onDelete(profile.slug, profile.title)}
-              className="w-full px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 hover:text-red-800 rounded text-xs font-medium transition-colors border border-red-200 hover:border-red-300"
+              onClick={() => onCopyUrl(profile)}
+              className="w-full px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-medium transition-colors border border-slate-300 hover:border-slate-400"
+              title={profileUrl}
             >
-              Delete
+              Copy URL
             </button>
-          </>
-        )}
-      </div>
+
+            {canManage && (
+              <button
+                onClick={() => onDelete(profile.slug, profile.title)}
+                className="w-full px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 hover:text-red-800 rounded text-xs font-medium transition-colors border border-red-200 hover:border-red-300"
+              >
+                Delete
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

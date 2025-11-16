@@ -86,7 +86,7 @@ export default function AdminHeader({
 
   return (
     <div className="bg-white rounded-xl shadow-md border border-slate-100 p-4 sm:p-6 mb-6">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
         <div className="flex-1">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
             <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-br from-slate-700 to-slate-800 bg-clip-text text-transparent">
@@ -98,7 +98,7 @@ export default function AdminHeader({
               <div className="relative">
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-800 border border-slate-200 hover:border-slate-300 rounded-lg text-base font-medium transition-all duration-200 shadow-sm hover:shadow-md min-h-[44px]"
+                  className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-800 border border-slate-200 hover:border-slate-300 rounded-lg text-base font-medium transition-all duration-200 shadow-sm hover:shadow-md min-h-[44px] cursor-pointer"
                   disabled={isLoading}
                 >
                   <span className="text-xs">👤</span>
@@ -126,7 +126,7 @@ export default function AdminHeader({
                         {/* Dashboard Link */}
                         <Link
                           href="/admin"
-                          className="block w-full text-left px-2 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded transition-colors font-medium mb-2"
+                          className="block w-full text-left px-2 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded transition-colors font-medium mb-2 cursor-pointer"
                           onClick={() => setIsDropdownOpen(false)}
                         >
                           <span className="flex items-center gap-2">
@@ -144,7 +144,7 @@ export default function AdminHeader({
                           <button
                             key={profile.slug}
                             onClick={() => handleProfileSwitch(profile.slug)}
-                            className={`w-full text-left px-3 py-3 rounded-lg text-base transition-all duration-200 min-h-[44px] flex items-center ${
+                            className={`w-full text-left px-3 py-3 rounded-lg text-base transition-all duration-200 min-h-[44px] flex items-center cursor-pointer ${
                               profile.slug === currentProfileSlug
                                 ? 'bg-slate-100 text-slate-800 font-medium shadow-sm'
                                 : 'hover:bg-slate-50 text-slate-700'
@@ -180,7 +180,7 @@ export default function AdminHeader({
 
         {/* Actions */}
         {actions && (
-          <div className="flex flex-row items-center gap-2 sm:gap-3 w-full sm:w-auto sm:ml-4">
+          <div className="flex flex-row items-center gap-2 w-full lg:w-auto lg:ml-4">
             {actions}
           </div>
         )}
