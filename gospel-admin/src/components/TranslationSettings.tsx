@@ -14,11 +14,29 @@ export default function TranslationSettings() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
   const [isOpen, setIsOpen] = useState(false)
+  const [esvCacheCount, setEsvCacheCount] = useState<number | null>(null)
+  const [esvVerseCount, setEsvVerseCount] = useState<number | null>(null)
+  const [withinLimit, setWithinLimit] = useState<boolean>(true)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     loadSettings()
+    loadEsvCacheCount()
   }, [])
+
+  async function loadEsvCacheCount() {
+    try {
+      const response = await fetch('/api/admin/esv-cache-count')
+      const data = await response.json()
+      if (data.count !== undefined) {
+        setEsvCacheCount(data.count)
+        setEsvVerseCount(data.totalVerses)
+        setWithinLimit(data.withinLimit ?? true)
+      }
+    } catch (error) {
+      console.error('Error loading ESV cache count:', error)
+    }
+  }
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -165,6 +183,17 @@ export default function TranslationSettings() {
             <p className="text-xs text-blue-800">
               <strong>Note:</strong> ESV is the fallback and cannot be disabled.
             </p>
+            {esvCacheCount !== null && esvVerseCount !== null && (
+              <div className="mt-2 space-y-1">
+                <p className="text-xs text-blue-700">
+                  <strong>ESV Cache:</strong> {esvCacheCount} references
+                </p>
+                <p className={`text-xs font-medium ${withinLimit ? 'text-green-700' : 'text-red-700'}`}>
+                  <strong>Verses Cached:</strong> {esvVerseCount}/500 
+                  {withinLimit ? ' ✓ Compliant' : ' ⚠ EXCEEDS LIMIT'}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
