@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { fetchScripture, BibleTranslation } from '@/lib/bible-api'
 import { logger } from '@/lib/logger'
 import { createAdminClient } from '@/lib/supabase/server'
+import { getTotalEsvCacheVerseCount } from '@/lib/verse-counter'
 
 // Cache configuration
 // ESV API free tier: max 500 verses (we cache to stay compliant)
@@ -98,14 +99,20 @@ export async function GET(request: NextRequest) {
       logger.info(`💾 Cached: ${reference} (${translation})`)
       
       // Enforce 500-verse limit for ESV (free tier restriction)
+      // Get actual verse count from cache
+      const totalVerses = await getTotalEsvCacheVerseCount(supabase)
+      
       const { data: evictedCount, error: lruError } = await (supabase.rpc as any)(
         'enforce_esv_cache_limit',
-        { p_max_verses: 500 }
+        { 
+          p_current_total_verses: totalVerses,
+          p_max_verses: 500
+        }
       )
       if (lruError) {
         logger.error('Failed to enforce cache limit:', lruError)
       } else if (evictedCount > 0) {
-        logger.debug(`🗑️ Evicted ${evictedCount} old ESV cache entries to stay within 500-verse limit`)
+        logger.info(`🗑️ Evicted ${evictedCount} old ESV cache entries (was ${totalVerses} verses, limit 500)`)
       }
     }
     
