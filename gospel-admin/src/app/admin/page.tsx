@@ -67,7 +67,7 @@ function AdminPageContent() {
   const [createForm, setCreateForm] = useState({
     title: '',
     description: '',
-    cloneFromSlug: 'default',
+    cloneFromSlug: '',
     isTemplate: false,
     counseleeEmails: [] as string[]
   })
@@ -204,26 +204,16 @@ function AdminPageContent() {
 
   const loadAvailableUsers = async () => {
     try {
-      const supabase = createClient()
-      const { data: profiles, error: profilesError } = await supabase
-        .from('user_profiles')
-        .select('display_name, role, username')
-        .order('display_name', { ascending: true })
+      // Call the API endpoint instead of using admin.listUsers directly
+      const response = await fetch('/api/users')
       
-      if (profilesError) {
-        logger.error('Failed to load users for dropdown:', profilesError)
+      if (!response.ok) {
+        logger.error('Failed to load users:', await response.text())
         return
       }
       
-      const users = profiles
-        .filter((p: any) => p.display_name) // Only include users with emails
-        .map((p: any) => ({
-          email: p.display_name,
-          role: p.role,
-          username: p.username
-        }))
-      
-      setAvailableUsers(users)
+      const data = await response.json()
+      setAvailableUsers(data.users || [])
     } catch (error) {
       logger.error('Error loading available users:', error)
     }
@@ -265,7 +255,7 @@ function AdminPageContent() {
         setCreateForm({ 
           title: '', 
           description: '', 
-          cloneFromSlug: 'default', 
+          cloneFromSlug: '', 
           isTemplate: false,
           counseleeEmails: []
         })
@@ -333,7 +323,13 @@ function AdminPageContent() {
     const email = counseleeEmailInput.trim().toLowerCase()
     if (email && email.includes('@') && !createForm.counseleeEmails.includes(email)) {
       const updatedEmails = [...createForm.counseleeEmails, email]
-      const emailList = updatedEmails.join(', ')
+      
+      // Build the display list with usernames (not emails)
+      const displayList = updatedEmails.map(e => {
+        const user = availableUsers.find(au => au.email === e)
+        // Use username from availableUsers, fallback to custom username input, or email prefix
+        return user?.username || usernameInput || e.split('@')[0]
+      }).join(', ')
       
       // Extract the original description (without the "For:" prefix if it exists)
       let baseDescription = createForm.description
@@ -344,8 +340,8 @@ function AdminPageContent() {
         }
       }
       
-      // Build new description with updated email list
-      const newDescription = `For: ${emailList}\n\n${baseDescription}`
+      // Build new description with usernames
+      const newDescription = `For: ${displayList}\n\n${baseDescription}`
       
       setCreateForm(prev => ({
         ...prev,
@@ -353,6 +349,7 @@ function AdminPageContent() {
         description: newDescription
       }))
       setCounseleeEmailInput('')
+      setUsernameInput('')
     }
   }
 
@@ -368,11 +365,15 @@ function AdminPageContent() {
       }
     }
     
-    // Build new description with updated email list
+    // Build new description with usernames (not emails)
     let newDescription = baseDescription
     if (updatedEmails.length > 0) {
-      const emailList = updatedEmails.join(', ')
-      newDescription = `For: ${emailList}\n\n${baseDescription}`
+      const displayList = updatedEmails.map(e => {
+        const user = availableUsers.find(au => au.email === e)
+        // Use username from user_profiles via availableUsers, not email
+        return user?.username || e.split('@')[0]
+      }).join(', ')
+      newDescription = `For: ${displayList}\n\n${baseDescription}`
     }
     
     setCreateForm(prev => ({
@@ -791,11 +792,11 @@ function AdminPageContent() {
           }
           showProfileSwitcher={false}
           actions={
-            <>
+            <div className="flex flex-wrap gap-2">
               {userRole === 'admin' && (
                 <Link
                   href="/admin/users"
-                  className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-700 border border-slate-200 hover:border-slate-300 rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+                  className="px-3 sm:px-4 py-2 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-700 border border-slate-200 hover:border-slate-300 rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md text-sm inline-flex items-center justify-center"
                 >
                   <span className="sm:hidden">Users</span>
                   <span className="hidden sm:inline">Manage Users</span>
@@ -803,19 +804,23 @@ function AdminPageContent() {
               )}
               <Link
                 href="/"
-                className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-700 border border-slate-200 hover:border-slate-300 rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+                className="px-3 sm:px-4 py-2 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-700 border border-slate-200 hover:border-slate-300 rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md text-sm inline-flex items-center justify-center"
               >
                 <span className="sm:hidden">View</span>
                 <span className="hidden sm:inline">View Site</span>
               </Link>
-              {userRole === 'admin' && <TranslationSettings />}
+              {userRole === 'admin' && (
+                <div className="order-3 sm:order-none">
+                  <TranslationSettings />
+                </div>
+              )}
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-700 border border-slate-200 hover:border-slate-300 rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
+                className="px-3 sm:px-4 py-2 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-700 border border-slate-200 hover:border-slate-300 rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer order-4 sm:order-none text-sm"
               >
                 Logout
               </button>
-            </>
+            </div>
           }
         />
 
@@ -828,20 +833,54 @@ function AdminPageContent() {
 
         <div className="px-3 sm:px-4 lg:px-6">
                   <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 mb-6 border border-slate-100">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
-              <div className="flex-1 min-w-0">
-                <h2 className="text-lg sm:text-xl font-semibold bg-gradient-to-br from-slate-700 to-slate-800 bg-clip-text text-transparent">
-                  {userRole === 'counselee' ? 'My Resources' : 'Resource Management'}
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                  {userRole === 'counselee' 
-                    ? 'View resources shared with you' 
-                    : 'Create, edit, and manage resources'}
-                </p>
+            <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg sm:text-xl font-semibold bg-gradient-to-br from-slate-700 to-slate-800 bg-clip-text text-transparent">
+                    {userRole === 'counselee' ? 'My Resources' : 'Resource Management'}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                    {userRole === 'counselee' 
+                      ? 'View resources shared with you' 
+                      : 'Create, edit, and manage resources'}
+                  </p>
+                </div>
+                {/* Hide management buttons for counselees - only show on desktop */}
+                {userRole !== 'counselee' && (
+                  <div className="hidden md:flex gap-2">
+                    <button
+                      onClick={() => setShowCreateForm(true)}
+                      className="px-3 sm:px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-slate-700 rounded-lg font-medium transition-all duration-200 text-xs sm:text-sm inline-flex items-center justify-center gap-2 whitespace-nowrap shrink-0 shadow-sm hover:shadow-md cursor-pointer"
+                    >
+                      <span className="text-sm sm:text-lg">+</span>
+                      <span className="hidden sm:inline">Assign Resource</span>
+                      <span className="sm:hidden">Assign</span>
+                    </button>
+                    
+                    <Link
+                      href="/admin/templates"
+                      className="px-3 sm:px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-slate-700 rounded-lg font-medium transition-all duration-200 text-xs sm:text-sm inline-flex items-center justify-center gap-2 whitespace-nowrap shrink-0 shadow-sm hover:shadow-md"
+                    >
+                      <span className="hidden sm:inline">Resource </span>Templates
+                    </Link>
+                    
+                    <label className="px-3 sm:px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-slate-700 rounded-lg font-medium transition-all duration-200 text-xs sm:text-sm inline-flex items-center justify-center gap-2 whitespace-nowrap shrink-0 cursor-pointer shadow-sm hover:shadow-md">
+                      {isRestoringNew ? 'Restoring...' : 'Create from Backup'}
+                      <input
+                        type="file"
+                        accept=".json"
+                        onChange={handleCreateFromBackup}
+                        disabled={isRestoringNew}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                )}
               </div>
-              {/* Hide management buttons for counselees */}
+              
+              {/* Mobile buttons - show below text on mobile/tablet */}
               {userRole !== 'counselee' && (
-                <div className="flex gap-2">
+                <div className="flex md:hidden gap-2 flex-wrap">
                   <button
                     onClick={() => setShowCreateForm(true)}
                     className="px-3 sm:px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-slate-700 rounded-lg font-medium transition-all duration-200 text-xs sm:text-sm inline-flex items-center justify-center gap-2 whitespace-nowrap shrink-0 shadow-sm hover:shadow-md cursor-pointer"
@@ -855,7 +894,7 @@ function AdminPageContent() {
                     href="/admin/templates"
                     className="px-3 sm:px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-slate-700 rounded-lg font-medium transition-all duration-200 text-xs sm:text-sm inline-flex items-center justify-center gap-2 whitespace-nowrap shrink-0 shadow-sm hover:shadow-md"
                   >
-                    Resource Templates
+                    <span className="hidden sm:inline">Resource </span>Templates
                   </Link>
                   
                   <label className="px-3 sm:px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-slate-700 rounded-lg font-medium transition-all duration-200 text-xs sm:text-sm inline-flex items-center justify-center gap-2 whitespace-nowrap shrink-0 cursor-pointer shadow-sm hover:shadow-md">
@@ -974,6 +1013,7 @@ function AdminPageContent() {
                     onChange={(e) => handleCloneFromChange(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 text-slate-900 bg-white shadow-sm text-sm transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
                   >
+                    <option value="">Pick a resource template to clone from</option>
                     {profiles.filter(p => {
                       if (userRole === 'admin') {
                         return p.isTemplate || !p.isTemplate
@@ -1005,22 +1045,18 @@ function AdminPageContent() {
                   <div className="flex gap-2 flex-col">
                     <div className="grid grid-cols-2 gap-2">
                       <select
+                        disabled={!createForm.cloneFromSlug}
+                        value=""
                         onChange={(e) => {
                           if (e.target.value) {
-                            setCounseleeEmailInput(e.target.value)
-                            // Find the username from available users
                             const user = availableUsers.find(u => u.email === e.target.value)
+                            setCounseleeEmailInput(e.target.value)
                             setUsernameInput(user?.username || '')
-                            setIsTypingCustomEmail(false)
-                          } else {
-                            setCounseleeEmailInput('')
-                            setUsernameInput('')
-                            setIsTypingCustomEmail(false)
                           }
                         }}
-                        className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 bg-white text-slate-900 shadow-sm transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10 text-sm"
+                        className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 bg-white text-slate-900 shadow-sm transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <option value="">Select existing user or type email...</option>
+                        <option value="">Select existing user...</option>
                         {availableUsers.map(user => (
                           <option key={user.email} value={user.email}>
                             {user.username || user.email} ({user.role})
@@ -1029,20 +1065,18 @@ function AdminPageContent() {
                       </select>
                       <input
                         type="email"
+                        disabled={!createForm.cloneFromSlug}
                         value={counseleeEmailInput}
                         onChange={(e) => {
                           const email = e.target.value
                           setCounseleeEmailInput(email)
-                          // Show username field if typing something that doesn't match existing user
-                          if (email.trim() && !availableUsers.find(u => u.email === email.trim())) {
-                            setIsTypingCustomEmail(true)
+                          // If matches existing user, populate their username
+                          const user = availableUsers.find(u => u.email === email.trim())
+                          if (user) {
+                            setUsernameInput(user.username || '')
                           } else {
-                            setIsTypingCustomEmail(false)
-                            // If matches existing user, populate their username
-                            const user = availableUsers.find(u => u.email === email.trim())
-                            if (user) {
-                              setUsernameInput(user.username || '')
-                            }
+                            // Clear username if email doesn't match any existing user
+                            setUsernameInput('')
                           }
                         }}
                         onKeyDown={(e) => {
@@ -1051,27 +1085,25 @@ function AdminPageContent() {
                             handleAddCounseleeEmail()
                           }
                         }}
-                        className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 text-slate-900 bg-white shadow-sm text-sm transition-colors"
-                        placeholder="Type email here..."
+                        className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 text-slate-900 bg-white shadow-sm text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        placeholder="Or type email address..."
                       />
                     </div>
 
-                    {/* Username Field - Only show when typing custom email */}
-                    {isTypingCustomEmail && (
-                      <input
-                        type="text"
-                        value={usernameInput}
-                        onChange={(e) => setUsernameInput(e.target.value)}
-                        placeholder="Username *"
-                        className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 text-slate-900 bg-white shadow-sm text-sm transition-colors"
-                        required={isTypingCustomEmail}
-                      />
-                    )}
+                    {/* Username Field - Always show */}
+                    <input
+                      type="text"
+                      disabled={!createForm.cloneFromSlug}
+                      value={usernameInput}
+                      onChange={(e) => setUsernameInput(e.target.value)}
+                      placeholder="Username *"
+                      className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 text-slate-900 bg-white shadow-sm text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
 
                     <button
                       type="button"
                       onClick={handleAddCounseleeEmail}
-                      disabled={!counseleeEmailInput.trim() || !counseleeEmailInput.includes('@') || (isTypingCustomEmail && !usernameInput.trim())}
+                      disabled={!createForm.cloneFromSlug || !counseleeEmailInput.trim() || !counseleeEmailInput.includes('@') || !usernameInput.trim()}
                       className="bg-green-50 hover:bg-green-100 text-green-700 hover:text-green-800 px-4 py-2 rounded-lg border border-green-200 hover:border-green-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium whitespace-nowrap"
                     >
                       Add
@@ -1080,18 +1112,22 @@ function AdminPageContent() {
                   
                   {createForm.counseleeEmails.length > 0 && (
                     <div className="space-y-1 max-h-32 overflow-y-auto border border-slate-200 rounded-lg p-2 bg-slate-50">
-                      {createForm.counseleeEmails.map(email => (
-                        <div key={email} className="flex items-center justify-between bg-white px-3 py-2 rounded border border-slate-200">
-                          <span className="text-sm text-slate-700">{email}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveCounseleeEmail(email)}
-                            className="text-red-600 hover:text-red-800 text-sm font-medium"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      ))}
+                      {createForm.counseleeEmails.map(email => {
+                        const user = availableUsers.find(u => u.email === email)
+                        const displayName = user?.username || email
+                        return (
+                          <div key={email} className="flex items-center justify-between bg-white px-3 py-2 rounded border border-slate-200">
+                            <span className="text-sm text-slate-700">{displayName}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveCounseleeEmail(email)}
+                              className="text-red-600 hover:text-red-800 text-sm font-medium"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
                 </div>
@@ -1104,9 +1140,10 @@ function AdminPageContent() {
                   <input
                     type="text"
                     id="title"
+                    disabled={!createForm.cloneFromSlug}
                     value={createForm.title}
                     onChange={(e) => handleTitleChange(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 text-slate-900 bg-white shadow-sm text-sm transition-all"
+                    className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 text-slate-900 bg-white shadow-sm text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="Title will get auto generated"
                     required
                     maxLength={50}
@@ -1120,9 +1157,10 @@ function AdminPageContent() {
                   </label>
                   <textarea
                     id="description"
+                    disabled={!createForm.cloneFromSlug}
                     value={createForm.description}
                     onChange={(e) => setCreateForm(prev => ({ ...prev, description: e.target.value }))}
-                    className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 text-slate-900 bg-white shadow-sm text-sm transition-all resize-y"
+                    className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 text-slate-900 bg-white shadow-sm text-sm transition-all resize-y disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="Description will get auto generated"
                     rows={3}
                     maxLength={200}
@@ -1135,9 +1173,10 @@ function AdminPageContent() {
                     <input
                       type="checkbox"
                       id="isTemplate"
+                      disabled={!createForm.cloneFromSlug}
                       checked={createForm.isTemplate}
                       onChange={(e) => setCreateForm(prev => ({ ...prev, isTemplate: e.target.checked }))}
-                      className="w-4 h-4 text-slate-600 border-slate-300 rounded focus:ring-slate-400"
+                      className="w-4 h-4 text-slate-600 border-slate-300 rounded focus:ring-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <label htmlFor="isTemplate" className="text-xs sm:text-sm font-medium text-slate-700">
                       Make this a resource template (editable only by admins, visible to all users)
@@ -1148,7 +1187,7 @@ function AdminPageContent() {
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <button
                     type="submit"
-                    disabled={isCreating || !createForm.title.trim() || !createForm.description.trim()}
+                    disabled={isCreating || !createForm.cloneFromSlug || !createForm.title.trim() || !createForm.description.trim()}
                     className="bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-700 border border-slate-200 hover:border-slate-300 px-4 py-2 rounded-lg transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md text-sm sm:text-base"
                   >
                     {isCreating ? 'Creating...' : 'Create Assignment'}
@@ -1160,7 +1199,7 @@ function AdminPageContent() {
                       setCreateForm({ 
                         title: '', 
                         description: '', 
-                        cloneFromSlug: 'default', 
+                        cloneFromSlug: '', 
                         isTemplate: false,
                         counseleeEmails: []
                       })
@@ -1204,6 +1243,7 @@ function AdminPageContent() {
                     onCopyUrl={handleCopyProfileUrl}
                     onDelete={handleDeleteProfile}
                     canManage={canManageProfile}
+                    userRole={userRole}
                     showDetails={userRole !== 'counselee' ? expandedRows.has(profile.id) : undefined}
                     onToggleDetails={userRole !== 'counselee' ? () => {
                       const newExpandedRows = new Set(expandedRows)
@@ -1324,27 +1364,16 @@ function AdminPageContent() {
                             </p>
                           )}
 
-                          {profile.visitCount !== undefined && (
-                            <p className="text-slate-600">
-                              <span className="font-medium">Views:</span> {profile.visitCount}
-                            </p>
-                          )}
-                          
                           {canManageProfile && profile.usernames && profile.usernames.length > 0 && (
                             <p className="text-slate-600">
-                              <span className="font-medium">Users:</span>{' '}
-                              <span className="text-blue-600">
-                                {profile.usernames.length} {profile.usernames.length === 1 ? 'user' : 'users'}
-                              </span>
-                              {' '}({profile.usernames.slice(0, 2).join(', ')}
-                              {profile.usernames.length > 2 && `, +${profile.usernames.length - 2} more`})
+                              <span className="font-medium">Counselees:</span>{' '}
+                              {profile.usernames.join(', ')}
                             </p>
                           )}
 
-                          {profile.usernames && profile.usernames.length > 0 && !canManageProfile && (
+                          {profile.visitCount !== undefined && (
                             <p className="text-slate-600">
-                              <span className="font-medium">Users:</span> {profile.usernames.slice(0, 2).join(', ')}
-                              {profile.usernames.length > 2 && ` +${profile.usernames.length - 2}`}
+                              <span className="font-medium">Views:</span> {profile.visitCount}
                             </p>
                           )}
                           

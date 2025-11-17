@@ -11,6 +11,7 @@ interface ProfileCardProps {
   canManage?: boolean
   showDetails?: boolean
   onToggleDetails?: () => void
+  userRole?: 'admin' | 'counselor' | 'counselee' | null
 }
 
 /**
@@ -23,7 +24,8 @@ export default function ProfileCard({
   onDelete,
   canManage = true,
   showDetails: externalShowDetails,
-  onToggleDetails
+  onToggleDetails,
+  userRole
 }: ProfileCardProps) {
   const [internalShowDetails, setInternalShowDetails] = useState(false)
   const showDetails = externalShowDetails !== undefined ? externalShowDetails : internalShowDetails
@@ -120,19 +122,18 @@ export default function ProfileCard({
                 <span className="text-slate-700 font-medium truncate">{profile.ownerUsername}</span>
               </div>
             )}
+            {userRole !== 'counselee' && profile.usernames && profile.usernames.length > 0 && (
+              <div className="flex items-start gap-2">
+                <span className="text-slate-500 whitespace-nowrap">Counselees:</span>
+                <span className="text-slate-700 font-medium">
+                  {profile.usernames.join(', ')}
+                </span>
+              </div>
+            )}
             {profile.visitCount !== undefined && (
               <div className="flex items-center gap-2">
                 <span className="text-slate-500">Views:</span>
                 <span className="text-slate-700 font-medium">{profile.visitCount}</span>
-              </div>
-            )}
-            {profile.usernames && profile.usernames.length > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-slate-500">Users:</span>
-                <span className="text-slate-700 font-medium truncate">
-                  {profile.usernames.slice(0, 2).join(', ')}
-                  {profile.usernames.length > 2 && ` +${profile.usernames.length - 2}`}
-                </span>
               </div>
             )}
             {profile.updatedAt && (
@@ -143,6 +144,27 @@ export default function ProfileCard({
                 </span>
               </div>
             )}
+            {profile.createdAt && (
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500">Created:</span>
+                <span className="text-slate-700 font-medium">
+                  {new Date(profile.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+            {profile.lastVisited ? (
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500">Last Viewed:</span>
+                <span className="text-slate-700 font-medium">
+                  {new Date(profile.lastVisited).toLocaleDateString()}
+                </span>
+              </div>
+            ) : profile.visitCount === 0 ? (
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500">Last Viewed:</span>
+                <span className="text-orange-500 font-medium">Never visited</span>
+              </div>
+            ) : null}
           </div>
 
           {/* Action Buttons */}
@@ -164,22 +186,24 @@ export default function ProfileCard({
               </div>
             )}
 
-            <button
-              onClick={() => onCopyUrl(profile)}
-              className="w-full px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-medium transition-colors border border-slate-300 hover:border-slate-400"
-              title={profileUrl}
-            >
-              Copy URL
-            </button>
-
-            {canManage && (
+            <div className="flex gap-2">
               <button
-                onClick={() => onDelete(profile.slug, profile.title)}
-                className="w-full px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 hover:text-red-800 rounded text-xs font-medium transition-colors border border-red-200 hover:border-red-300"
+                onClick={() => onCopyUrl(profile)}
+                className="flex-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-medium transition-colors border border-slate-300 hover:border-slate-400"
+                title={profileUrl}
               >
-                Delete
+                Copy URL
               </button>
-            )}
+
+              {canManage && (
+                <button
+                  onClick={() => onDelete(profile.slug, profile.title)}
+                  className="flex-1 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 hover:text-red-800 rounded text-xs font-medium transition-colors border border-red-200 hover:border-red-300"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

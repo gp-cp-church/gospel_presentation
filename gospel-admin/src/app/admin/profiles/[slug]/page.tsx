@@ -110,26 +110,16 @@ function ProfileEditPage({ params }: ProfileEditPageProps) {
 
   const loadAvailableUsers = async () => {
     try {
-      const supabase = createClient()
-      const { data: profiles, error: profilesError } = await supabase
-        .from('user_profiles')
-        .select('display_name, role, username')
-        .order('display_name', { ascending: true })
+      // Call the API endpoint instead of querying directly
+      const response = await fetch('/api/users')
       
-      if (profilesError) {
-        console.error('Failed to load users for dropdown:', profilesError)
+      if (!response.ok) {
+        console.error('Failed to load users:', await response.text())
         return
       }
       
-      const users = profiles
-        .filter((p: any) => p.display_name)
-        .map((p: any) => ({
-          email: p.display_name,
-          role: p.role,
-          username: p.username
-        }))
-      
-      setAvailableUsers(users)
+      const data = await response.json()
+      setAvailableUsers(data.users || [])
     } catch (error) {
       console.error('Error loading available users:', error)
     }
@@ -172,9 +162,9 @@ function ProfileEditPage({ params }: ProfileEditPageProps) {
     e.preventDefault()
     if (!counseleeEmailInput.trim() || !profile) return
 
-    // If typing custom email, require username
-    if (isTypingCustomEmail && !usernameInput.trim()) {
-      setAccessError('Username is required when adding a new email')
+    // Username is always required
+    if (!usernameInput.trim()) {
+      setAccessError('Username is required')
       return
     }
 
@@ -189,14 +179,53 @@ function ProfileEditPage({ params }: ProfileEditPageProps) {
         },
         body: JSON.stringify({
           email: counseleeEmailInput.trim(),
-          username: usernameInput.trim() || undefined
+          username: usernameInput.trim()
         })
       })
 
       if (response.ok) {
+        // Update the description to prepend the username
+        const currentCounselees = profileAccess.map(a => a.user_email)
+        const updatedCounselees = [...currentCounselees, counseleeEmailInput.trim()]
+        
+        // Build the display list with usernames
+        const displayList = updatedCounselees.map(email => {
+          if (email === counseleeEmailInput.trim()) {
+            return usernameInput.trim()
+          }
+          const access = profileAccess.find(a => a.user_email === email)
+          return access?.username || email.split('@')[0]
+        }).join(', ')
+        
+        // Extract the original description (without the "For:" prefix if it exists)
+        let baseDescription = editForm.description
+        if (editForm.description.startsWith('For: ')) {
+          const forEndIndex = editForm.description.indexOf('\n\n')
+          if (forEndIndex !== -1) {
+            baseDescription = editForm.description.substring(forEndIndex + 2)
+          }
+        }
+        
+        // Build new description with usernames
+        const newDescription = `For: ${displayList}\n\n${baseDescription}`
+        
+        // Update the profile description
+        await fetch(`/api/profiles/${slug}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title: editForm.title,
+            description: newDescription
+          })
+        })
+        
+        // Update local state
+        setEditForm(prev => ({ ...prev, description: newDescription }))
+        
         setCounseleeEmailInput('')
         setUsernameInput('')
-        setIsTypingCustomEmail(false)
         await fetchProfileAccess()
       } else {
         const errorData = await response.json().catch(() => ({}))
@@ -224,6 +253,42 @@ function ProfileEditPage({ params }: ProfileEditPageProps) {
       })
 
       if (response.ok) {
+        // Update the description to remove the username
+        const updatedCounselees = profileAccess.filter(a => a.user_email !== email)
+        
+        // Extract the original description (without the "For:" prefix)
+        let baseDescription = editForm.description
+        if (editForm.description.startsWith('For: ')) {
+          const forEndIndex = editForm.description.indexOf('\n\n')
+          if (forEndIndex !== -1) {
+            baseDescription = editForm.description.substring(forEndIndex + 2)
+          }
+        }
+        
+        // Build new description
+        let newDescription = baseDescription
+        if (updatedCounselees.length > 0) {
+          const displayList = updatedCounselees.map(access => 
+            access.username || access.user_email.split('@')[0]
+          ).join(', ')
+          newDescription = `For: ${displayList}\n\n${baseDescription}`
+        }
+        
+        // Update the profile description
+        await fetch(`/api/profiles/${slug}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title: editForm.title,
+            description: newDescription
+          })
+        })
+        
+        // Update local state
+        setEditForm(prev => ({ ...prev, description: newDescription }))
+        
         await fetchProfileAccess()
       } else {
         const errorData = await response.json().catch(() => ({}))
@@ -515,23 +580,18 @@ function ProfileEditPage({ params }: ProfileEditPageProps) {
             <div className="flex gap-2 flex-col">
               <div className="grid grid-cols-2 gap-2">
                 <select
+                  value=""
                   onChange={(e) => {
                     if (e.target.value) {
-                      setCounseleeEmailInput(e.target.value)
-                      // Find the username from available users
                       const user = availableUsers.find(u => u.email === e.target.value)
+                      setCounseleeEmailInput(e.target.value)
                       setUsernameInput(user?.username || '')
-                      setIsTypingCustomEmail(false)
-                    } else {
-                      setCounseleeEmailInput('')
-                      setUsernameInput('')
-                      setIsTypingCustomEmail(false)
                     }
                   }}
-                  className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 bg-white text-slate-900 shadow-sm transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10 text-sm"
+                  className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 bg-white text-slate-900 shadow-sm transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={isAddingCounselee}
                 >
-                  <option value="">Select existing user or type email...</option>
+                  <option value="">Select existing user...</option>
                   {availableUsers.map(user => (
                     <option key={user.email} value={user.email}>
                       {user.username || user.email} ({user.role})
@@ -544,40 +604,34 @@ function ProfileEditPage({ params }: ProfileEditPageProps) {
                   onChange={(e) => {
                     const email = e.target.value
                     setCounseleeEmailInput(email)
-                    // Show username field if typing something that doesn't match existing user
-                    if (email.trim() && !availableUsers.find(u => u.email === email.trim())) {
-                      setIsTypingCustomEmail(true)
+                    // If matches existing user, populate their username
+                    const user = availableUsers.find(u => u.email === email.trim())
+                    if (user) {
+                      setUsernameInput(user.username || '')
                     } else {
-                      setIsTypingCustomEmail(false)
-                      // If matches existing user, populate their username
-                      const user = availableUsers.find(u => u.email === email)
-                      if (user) {
-                        setUsernameInput(user.username || '')
-                      }
+                      // Clear username if email doesn't match any existing user
+                      setUsernameInput('')
                     }
                   }}
-                  placeholder="Type email here..."
-                  className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 text-slate-900 bg-white shadow-sm text-sm transition-colors"
+                  placeholder="Or type email address..."
+                  className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 text-slate-900 bg-white shadow-sm text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={isAddingCounselee}
                 />
               </div>
 
-              {/* Username Field - Show when typing email that doesn't match existing user */}
-              {isTypingCustomEmail && (
-                <input
-                  type="text"
-                  value={usernameInput}
-                  onChange={(e) => setUsernameInput(e.target.value)}
-                  placeholder="Username *"
-                  className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 text-slate-900 bg-white shadow-sm text-sm transition-colors"
-                  disabled={isAddingCounselee}
-                  required={isTypingCustomEmail}
-                />
-              )}
+              {/* Username Field - Always show */}
+              <input
+                type="text"
+                value={usernameInput}
+                onChange={(e) => setUsernameInput(e.target.value)}
+                placeholder="Username *"
+                className="w-full px-3 py-2 border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 text-slate-900 bg-white shadow-sm text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isAddingCounselee}
+              />
               
               <button
                 type="submit"
-                disabled={isAddingCounselee || !counseleeEmailInput.trim() || (isTypingCustomEmail && !usernameInput.trim())}
+                disabled={isAddingCounselee || !counseleeEmailInput.trim() || !counseleeEmailInput.includes('@') || !usernameInput.trim()}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md whitespace-nowrap"
               >
                 {isAddingCounselee ? 'Adding...' : 'Add'}

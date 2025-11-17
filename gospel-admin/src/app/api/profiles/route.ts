@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getProfiles, createProfile } from '@/lib/supabase-data-service'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import type { CreateProfileRequest, GospelProfile } from '@/lib/types'
 import { logger } from '@/lib/logger'
 
@@ -45,21 +45,49 @@ export async function GET() {
       
       // Then get usernames for counselees by email
       if (allCounseleeEmails.size > 0) {
-        const { data: userProfiles, error } = await supabase
-          .from('user_profiles')
-          .select('email, username')
-          .in('email', Array.from(allCounseleeEmails))
-
-        if (error) {
-          logger.error('[API] Error fetching usernames:', error)
-        }
-
-        if (userProfiles) {
-          userProfiles.forEach((up: any) => {
-            if (up.email && up.username) {
-              usernameMap.set(up.email, up.username)
+        // Use admin client to get auth users
+        const adminClient = createAdminClient()
+        const { data: authData, error: authError } = await adminClient.auth.admin.listUsers()
+        
+        if (authError) {
+          logger.error('[API] Error fetching auth users:', authError)
+        } else if (authData) {
+          const emailToIdMap = new Map<string, string>()
+          authData.users.forEach((u: any) => {
+            if (u.email) {
+              emailToIdMap.set(u.email, u.id)
             }
           })
+          
+          // Now get user_profiles by user ID
+          const counseleeIds = Array.from(allCounseleeEmails)
+            .map(email => emailToIdMap.get(email))
+            .filter(id => id) as string[]
+          
+          if (counseleeIds.length > 0) {
+            const { data: userProfiles, error } = await supabase
+              .from('user_profiles')
+              .select('id, username')
+              .in('id', counseleeIds)
+
+            if (error) {
+              logger.error('[API] Error fetching usernames:', error)
+            }
+
+            if (userProfiles) {
+              // Map back to emails
+              userProfiles.forEach((up: any) => {
+                if (up.id && up.username) {
+                  // Find the email for this user ID
+                  const email = Array.from(emailToIdMap.entries())
+                    .find(([_, id]) => id === up.id)?.[0]
+                  if (email) {
+                    usernameMap.set(email, up.username)
+                  }
+                }
+              })
+            }
+          }
         }
       }
     }
@@ -84,6 +112,12 @@ export async function GET() {
         .map((email: string) => usernameMap.get(email))
         .filter((username: string | undefined) => username)
     }))
+    
+    logger.debug('[API] Returning profiles with usernames:', profileList.map(p => ({ 
+      slug: p.slug, 
+      counseleeEmails: p.counseleeEmails,
+      usernames: p.usernames 
+    })))
     
     return NextResponse.json({ profiles: profileList })
   } catch (error) {

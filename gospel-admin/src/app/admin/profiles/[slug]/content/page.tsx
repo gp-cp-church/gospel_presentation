@@ -1050,7 +1050,8 @@ function ContentEditPage({ params }: ContentEditPageProps) {
                 onClick={() => setShowComaTemplateEditor(!showComaTemplateEditor)}
                 className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-700 border border-slate-200 hover:border-slate-300 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md font-medium"
               >
-                {showComaTemplateEditor ? 'Hide' : 'Edit'} COMA Template
+                <span className="sm:hidden">{showComaTemplateEditor ? 'Hide' : 'Edit'} COMA</span>
+                <span className="hidden sm:inline">{showComaTemplateEditor ? 'Hide' : 'Edit'} COMA Template</span>
               </button>
 
               <button
