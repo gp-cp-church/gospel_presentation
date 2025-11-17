@@ -1,30 +1,25 @@
-# Gospel Presentation Project Documentation
+# Gospel Presentation Documentation
 
-This directory contains comprehensive documentation for the Gospel Presentation project.
+Welcome to the Gospel Presentation project documentation. Choose a topic below to get started.
 
-## 📚 Documentation Index
+## 📚 Core Topics
 
-### Deployment & Infrastructure
-- [**DEPLOY_TO_NETLIFY.md**](DEPLOY_TO_NETLIFY.md) - Complete Netlify deployment guide
-- [**DEPLOYMENT_CHECKLIST.md**](DEPLOYMENT_CHECKLIST.md) - Pre-deployment validation steps
-- [**NETLIFY_DEPLOY.md**](NETLIFY_DEPLOY.md) - Netlify-specific deployment instructions
-- [**NETLIFY_ENVIRONMENT_SETUP.md**](NETLIFY_ENVIRONMENT_SETUP.md) - Environment configuration
-- [**NETLIFY_BLOB_SETUP.md**](NETLIFY_BLOB_SETUP.md) - Blob storage configuration
+| Topic | Description |
+|-------|-------------|
+| **[01-USERS_AND_ACCESS.md](01-USERS_AND_ACCESS.md)** | User roles, counselee assignment, access control |
+| **[02-BIBLE_AND_SCRIPTURE.md](02-BIBLE_AND_SCRIPTURE.md)** | Bible translations, KJV database, ESV caching |
+| **[03-FEATURES.md](03-FEATURES.md)** | Questions, answers, COMA, profiles, backup |
+| **[04-AUTHENTICATION.md](04-AUTHENTICATION.md)** | Magic links, email invitations, sessions |
+| **[05-INFRASTRUCTURE.md](05-INFRASTRUCTURE.md)** | Supabase setup, security, RLS, deployment |
+| **[06-REFERENCE.md](06-REFERENCE.md)** | Updates, licenses, templates, testing |
 
-### Development & APIs
-- [**GITHUB_API_SETUP.md**](GITHUB_API_SETUP.md) - GitHub API integration setup
-- [**BACKUP_SYSTEM.md**](BACKUP_SYSTEM.md) - Data backup and recovery procedures
+## 🎯 Quick Start
 
-### Testing & Quality Assurance
-- [**TEST_SUITE_README.md**](TEST_SUITE_README.md) - Test suite overview and setup
-- [**TEST_SUITE_SUMMARY.md**](TEST_SUITE_SUMMARY.md) - Test coverage and results
-- [**test-pin-click.md**](test-pin-click.md) - Pin-click functionality testing guide
+1. **New to the project?** → Read [05-INFRASTRUCTURE.md](05-INFRASTRUCTURE.md)
+2. **Setting up users?** → Read [01-USERS_AND_ACCESS.md](01-USERS_AND_ACCESS.md)
+3. **Deploying?** → Check [05-INFRASTRUCTURE.md](05-INFRASTRUCTURE.md) deployment section
+4. **Adding features?** → Browse [03-FEATURES.md](03-FEATURES.md)
 
-### Security
-- [**SECURITY.md**](SECURITY.md) - Security guidelines and best practices
+## 🗂️ Organization
 
-## 🚀 Quick Start
-1. Review [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) for initial setup
-2. Follow [DEPLOY_TO_NETLIFY.md](DEPLOY_TO_NETLIFY.md) for deployment
-3. Configure environment using [NETLIFY_ENVIRONMENT_SETUP.md](NETLIFY_ENVIRONMENT_SETUP.md)
-4. Run tests following [TEST_SUITE_README.md](TEST_SUITE_README.md)
+6 core topics with numbered prefixes for easy navigation.
