@@ -69,11 +69,13 @@ gospel-admin/              # Main Next.js application
 └── docs/                 # Documentation
 
 docs/                     # Project documentation
-├── COUNSELEE_SYSTEM.md   # Counselor/counselee role guide
-├── QUESTIONS_FEATURE.md  # Reflection questions feature
-├── SUPABASE_MIGRATION.md # Database migration guide
-├── BACKUP_SYSTEM.md      # Backup/restore documentation
-└── RECENT_UPDATES.md     # Changelog and updates
+├── 01-USERS_AND_ACCESS.md        # User roles, counselee assignment, access control
+├── 02-BIBLE_AND_SCRIPTURE.md     # Bible translations, KJV database, ESV caching
+├── 03-FEATURES.md                # Questions, answers, COMA, profiles, backup
+├── 04-AUTHENTICATION.md          # Magic links, email invitations, sessions
+├── 05-INFRASTRUCTURE.md          # Supabase setup, security, RLS, deployment
+├── 06-REFERENCE.md               # Licenses, templates, testing reference
+└── README.md                      # Documentation quick start
 
 backups/                  # Profile backup storage
 ```
