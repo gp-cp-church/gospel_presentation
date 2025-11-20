@@ -26,6 +26,7 @@ export default function UsersPage() {
   const [newUserRole, setNewUserRole] = useState<'admin' | 'counselor' | 'counselee'>('counselor')
   const [isCreatingUser, setIsCreatingUser] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'counselor' | 'counselee'>('all')
   const [editingCounselee, setEditingCounselee] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
 
@@ -171,8 +172,12 @@ export default function UsersPage() {
     }
   }
 
-  // Filter users based on search query
+  // Filter users based on search query and role filter
   const filteredUsers = users.filter(user => {
+    // Role filter
+    if (roleFilter !== 'all' && user.role !== roleFilter) return false
+    
+    // Search query filter
     if (!searchQuery.trim()) return true
     
     const query = searchQuery.toLowerCase()
@@ -294,9 +299,9 @@ export default function UsersPage() {
             </div>
           </div>
 
-          {/* Search Field */}
-          <div className="mb-6">
-            <div className="relative">
+          {/* Search and Filter */}
+          <div className="mb-6 flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
               <input
                 type="text"
                 value={searchQuery}
@@ -323,6 +328,16 @@ export default function UsersPage() {
                 </button>
               )}
             </div>
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value as 'all' | 'admin' | 'counselor' | 'counselee')}
+              className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm text-slate-900 bg-white cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10 min-w-[140px]"
+            >
+              <option value="all">All Roles</option>
+              <option value="admin">Admin</option>
+              <option value="counselor">Counselor</option>
+              <option value="counselee">Counselee</option>
+            </select>
           </div>
 
           {/* Error message */}
@@ -340,108 +355,79 @@ export default function UsersPage() {
               <p className="mt-4 text-slate-600">Loading users...</p>
             </div>
           ) : (
-            /* Users table */
-            <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-slate-200">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                      Role
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                      Created
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-slate-200">
-                  {filteredUsers.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
-                        {searchQuery ? 'No users found matching your search' : 'No users found'}
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredUsers.map((user) => (
-                      <tr key={user.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-slate-900">
-                            {user.email}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                          {editingCounselee === user.id ? (
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                value={editingName}
-                                onChange={(e) => setEditingName(e.target.value)}
-                                className="px-2 py-1 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200"
-                                autoFocus
-                              />
-                              <button
-                                onClick={() => handleUpdateCounseeleeName(user.id, editingName)}
-                                className="text-blue-600 hover:text-blue-800 text-xs font-medium"
-                              >
-                                Save
-                              </button>
-                              <button
-                                onClick={() => setEditingCounselee(null)}
-                                className="text-slate-600 hover:text-slate-800 text-xs font-medium"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-between group">
-                              <span>{user.username || user.email}</span>
-                              <button
-                                onClick={() => {
-                                  setEditingCounselee(user.id)
-                                  setEditingName(user.username || '')
-                                }}
-                                className="opacity-0 group-hover:opacity-100 text-amber-500 hover:text-amber-700 text-xs ml-2"
-                              >
-                                ✎
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <select
-                            value={user.role}
-                            onChange={(e) => handleRoleChange(user.id, e.target.value as 'admin' | 'counselor' | 'counselee')}
-                            className="px-3 py-1 text-sm border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 bg-white text-slate-900 shadow-sm transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-10"
-                          >
-                            <option value="admin">Admin</option>
-                            <option value="counselor">Counselor</option>
-                            <option value="counselee">Counselee</option>
-                          </select>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                          {new Date(user.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+            <div className="bg-white rounded-lg shadow-lg border border-slate-200 p-4">
+              {filteredUsers.length === 0 ? (
+                <div className="p-6 text-center text-slate-500">
+                  {searchQuery ? 'No users found matching your search' : 'No users found'}
+                </div>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {filteredUsers.map(user => (
+                    <div key={user.id} className="group rounded-md border border-slate-200 p-4 flex flex-col gap-2 hover:shadow-sm hover:border-slate-300 transition">
+                      {/* Top row: email + role */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="text-sm font-semibold text-slate-900 break-all leading-tight">{user.email}</div>
+                        <span className={`text-[10px] uppercase tracking-wide px-2 py-1 rounded-full border ${
+                          user.role === 'admin' ? 'bg-purple-100 text-purple-700 border-purple-300' :
+                          user.role === 'counselor' ? 'bg-blue-100 text-blue-700 border-blue-300' :
+                          'bg-green-100 text-green-700 border-green-300'
+                        }`}>{user.role}</span>
+                      </div>
+                      {/* Name editing */}
+                      {editingCounselee === user.id ? (
+                        <div className="flex gap-2 items-start">
+                          <input
+                            type="text"
+                            value={editingName}
+                            onChange={(e) => setEditingName(e.target.value)}
+                            className="flex-1 px-2 py-1 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-200"
+                            autoFocus
+                            placeholder="Name"
+                          />
                           <button
-                            onClick={() => handleDeleteUser(user.id, user.email)}
-                            className="text-red-700 hover:text-red-800 text-xs sm:text-sm font-medium bg-red-50 hover:bg-red-100 px-2 sm:px-3 py-1 rounded-lg border border-red-200 hover:border-red-300 transition-all duration-200 shadow-sm hover:shadow-md"
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                            onClick={() => handleUpdateCounseeleeName(user.id, editingName)}
+                            className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                          >Save</button>
+                          <button
+                            onClick={() => setEditingCounselee(null)}
+                            className="text-slate-600 hover:text-slate-800 text-xs font-medium"
+                          >Cancel</button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-slate-700 truncate max-w-[70%]" title={user.username || user.email}>{user.username || user.email}</span>
+                          <button
+                            onClick={() => { setEditingCounselee(user.id); setEditingName(user.username || '') }}
+                            className="opacity-0 group-hover:opacity-100 text-amber-500 hover:text-amber-700 text-xs ml-2"
+                          >✎</button>
+                        </div>
+                      )}
+                      {/* Meta + role select row */}
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <select
+                          value={user.role}
+                          onChange={(e) => handleRoleChange(user.id, e.target.value as 'admin' | 'counselor' | 'counselee')}
+                          className="px-2 py-1 text-xs border border-slate-200 hover:border-slate-300 focus:border-slate-400 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-200 bg-white text-slate-900 shadow-sm transition cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat pr-6"
+                        >
+                          <option value="admin">Admin</option>
+                          <option value="counselor">Counselor</option>
+                          <option value="counselee">Counselee</option>
+                        </select>
+                        <div className="text-[11px] text-slate-500 flex items-center">
+                          <span className="hidden lg:inline mr-1">Created:</span>{new Date(user.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                      {/* Actions */}
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => handleDeleteUser(user.id, user.email)}
+                          className="text-red-700 hover:text-red-800 text-xs font-medium bg-red-50 hover:bg-red-100 px-3 py-1 rounded-md border border-red-200 hover:border-red-300 transition shadow-sm hover:shadow-md"
+                        >Delete</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
