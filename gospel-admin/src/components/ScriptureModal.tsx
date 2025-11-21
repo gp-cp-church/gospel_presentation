@@ -63,7 +63,8 @@ export default function ScriptureModal({
 
   // Extract verse numbers for highlighting
   const getVerseNumbers = (verseRef: string): number[] => {
-    const match = verseRef.match(/:(\d+)(?:-(\d+))?/)
+    // Match both regular hyphen (-) and en-dash (–) for verse ranges
+    const match = verseRef.match(/:(\d+)(?:[-–](\d+))?/)
     if (match) {
       const start = parseInt(match[1])
       const end = match[2] ? parseInt(match[2]) : start
@@ -121,9 +122,18 @@ export default function ScriptureModal({
       setTimeout(() => {
         const verseNumbers = getVerseNumbers(reference)
         if (verseNumbers.length > 0) {
-          const firstVerseElement = document.getElementById(`verse-${verseNumbers[0]}`)
-          if (firstVerseElement) {
-            firstVerseElement.scrollIntoView({
+          // For verse ranges, use the range ID; for single verses, use verse-specific ID
+          let elementId = ''
+          if (verseNumbers.length > 1) {
+            const lastVerse = verseNumbers[verseNumbers.length - 1]
+            elementId = `verse-range-${verseNumbers[0]}-${lastVerse}`
+          } else {
+            elementId = `verse-${verseNumbers[0]}`
+          }
+          
+          const highlightedElement = document.getElementById(elementId)
+          if (highlightedElement) {
+            highlightedElement.scrollIntoView({
               behavior: 'smooth',
               block: 'center'
             })
@@ -174,20 +184,41 @@ export default function ScriptureModal({
 
   const processChapterText = (text: string): string => {
     const verseNumbers = getVerseNumbers(reference)
+    
+    if (verseNumbers.length === 0) {
+      // No verses to highlight, just format the text
+      return text
+        .replace(/\[(\d+)\]/g, '<sup class="text-blue-600 font-medium">$1</sup>')
+        .replace(/\n\n/g, '</p><p class="mt-4">')
+    }
+    
+    const firstVerse = verseNumbers[0]
+    const lastVerse = verseNumbers[verseNumbers.length - 1]
+    const isRange = verseNumbers.length > 1
+    
     let processedText = text
       .replace(/\[(\d+)\]/g, '<sup class="text-blue-600 font-medium">$1</sup>')
       .replace(/\n\n/g, '</p><p class="mt-4">')
     
-    // Highlight target verses
-    verseNumbers.forEach(verseNum => {
-      const pattern = new RegExp(`(<sup[^>]*>${verseNum}</sup>.*?)(?=<sup[^>]*>\\d+</sup>|$)`, 'gs')
+    if (isRange) {
+      // For a range: Find and wrap everything from first verse to end of last verse
+      const rangePattern = new RegExp(
+        `(<sup[^>]*>${firstVerse}</sup>[\\s\\S]*?<sup[^>]*>${lastVerse}</sup>[\\s\\S]*?)(?=<sup[^>]*>\\d+</sup>|$)`,
+        'g'
+      )
       
-      processedText = processedText.replace(pattern, (match, verseContent) => {
-        return `<div id="verse-${verseNum}" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border-left: 4px solid #3b82f6; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);">
-          <div style="font-weight: 600; color: #1e293b; font-size: 16px; line-height: 1.7;">${verseContent}</div>
-        </div>`
-      })
-    })
+      processedText = processedText.replace(
+        rangePattern,
+        `<div id="verse-range-${firstVerse}-${lastVerse}" class="bg-gradient-to-br from-slate-50 to-slate-100 border-l-4 border-blue-500 px-4 py-3 my-4 rounded-r-md shadow-sm"><div class="font-semibold text-slate-900 text-base leading-relaxed">$1</div></div>`
+      )
+    } else {
+      // Single verse - wrap it with Tailwind classes
+      const verseNum = firstVerse
+      processedText = processedText.replace(
+        new RegExp(`(<sup[^>]*>${verseNum}</sup>[\\s\\S]*?)(?=<sup[^>]*>\\d+</sup>|$)`, 'g'),
+        `<div id="verse-${verseNum}" class="bg-gradient-to-br from-slate-50 to-slate-100 border-l-4 border-blue-500 px-4 py-3 my-4 rounded-r-md shadow-sm"><div class="font-semibold text-slate-900 text-base leading-relaxed">$1</div></div>`
+      )
+    }
     
     return processedText
   }
