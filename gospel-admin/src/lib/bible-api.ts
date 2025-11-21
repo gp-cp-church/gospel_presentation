@@ -73,35 +73,47 @@ function parseReference(reference: string): { book: string; chapter: number; ver
 
 /**
  * Normalize book names to match database format
- * Database uses: "I Samuel", "II Samuel", "Revelation of John", etc.
+ * KJV uses Roman numerals: "I Samuel", "II Samuel", "Revelation of John"
+ * NASB uses Arabic numerals: "1 Samuel", "2 Samuel", "Revelation"
  * Common input: "1 Samuel", "2 Samuel", "Revelation", etc.
  */
-function normalizeBookName(book: string): string {
-  const normalizations: Record<string, string> = {
-    '1 samuel': 'I Samuel',
-    '2 samuel': 'II Samuel',
-    '1 kings': 'I Kings',
-    '2 kings': 'II Kings',
-    '1 chronicles': 'I Chronicles',
-    '2 chronicles': 'II Chronicles',
-    '1 corinthians': 'I Corinthians',
-    '2 corinthians': 'II Corinthians',
-    '1 thessalonians': 'I Thessalonians',
-    '2 thessalonians': 'II Thessalonians',
-    '1 timothy': 'I Timothy',
-    '2 timothy': 'II Timothy',
-    '1 peter': 'I Peter',
-    '2 peter': 'II Peter',
-    '1 john': 'I John',
-    '2 john': 'II John',
-    '3 john': 'III John',
-    'revelation': 'Revelation of John',
+function normalizeBookName(book: string, translation: BibleTranslation): string {
+  const key = book.toLowerCase()
+  
+  // KJV-specific normalizations (uses Roman numerals)
+  if (translation === 'kjv') {
+    const kjvNormalizations: Record<string, string> = {
+      '1 samuel': 'I Samuel',
+      '2 samuel': 'II Samuel',
+      '1 kings': 'I Kings',
+      '2 kings': 'II Kings',
+      '1 chronicles': 'I Chronicles',
+      '2 chronicles': 'II Chronicles',
+      '1 corinthians': 'I Corinthians',
+      '2 corinthians': 'II Corinthians',
+      '1 thessalonians': 'I Thessalonians',
+      '2 thessalonians': 'II Thessalonians',
+      '1 timothy': 'I Timothy',
+      '2 timothy': 'II Timothy',
+      '1 peter': 'I Peter',
+      '2 peter': 'II Peter',
+      '1 john': 'I John',
+      '2 john': 'II John',
+      '3 john': 'III John',
+      'revelation': 'Revelation of John',
+      'song of songs': 'Song of Solomon',
+      'song of sol': 'Song of Solomon',
+    }
+    return kjvNormalizations[key] || book
+  }
+  
+  // NASB keeps Arabic numerals, just normalize common variations
+  const commonNormalizations: Record<string, string> = {
     'song of songs': 'Song of Solomon',
     'song of sol': 'Song of Solomon',
   }
   
-  const key = book.toLowerCase()
-  return normalizations[key] || book
+  return commonNormalizations[key] || book
 }
 
 /**
@@ -120,7 +132,7 @@ async function fetchFromDatabase(reference: string, translation: BibleTranslatio
   const { book, chapter, verseStart, verseEnd } = parsed
   
   // Normalize book name for database lookup
-  const normalizedBook = normalizeBookName(book)
+  const normalizedBook = normalizeBookName(book, translation)
   
   // Fetch verses from database
   let query = supabase
