@@ -8,29 +8,54 @@ Complete guide to Bible translations, caching, and scripture retrieval.
 |-------------|--------|-------|
 | **ESV** | ESV API | Cached in database, free tier available |
 | **KJV** | Local Database | 31,102 verses, no API limit |
-| **NASB** | API.Bible (optional) | External API, can be cached |
+| **NASB** | Local Database | 31,103 verses, no API limit |
 
-## KJV Implementation
+## Local Database Translations (KJV & NASB)
 
-KJV is stored in local Supabase database with:
-- **31,102 verses** imported from scrollmapper/bible_databases (MIT licensed)
+Both KJV and NASB are stored in the local Supabase `bible_verses` table:
+- **31,102 KJV verses** - imported from scrollmapper/bible_databases (MIT licensed)
+- **31,103 NASB verses** - imported from DBL USX files (Lockman Foundation licensed)
 - **0 API calls needed** - completely offline capable
-- **Fast lookups** - no external network latency
+- **Fast lookups** - <5ms per reference
 - **No rate limits** - unlimited access
+- **Verse range support** - handles both hyphens (-) and en-dashes (–)
+
+### Table Structure
+```sql
+bible_verses {
+  id: bigint (primary key)
+  translation: 'esv' | 'kjv' | 'nasb'
+  book: string (normalized book name)
+  chapter: integer
+  verse: integer
+  text: string
+}
+```
 
 ### Setup
 ```bash
-# Create table
-# Copy gospel-admin/sql/create_bible_verses_table.sql to Supabase SQL Editor
-
-# Import data
+# Create bible_verses table
 cd gospel-admin
+node scripts/create-bible-table.js
+
+# Import KJV
 node scripts/import-kjv-bible.js
+
+# Import NASB (requires DBL USX files)
+node scripts/import-nasb-bible.js
 ```
 
 ### Book Name Normalization
-Database uses: `I Samuel`, `II Samuel`, `Revelation of John`
-Input converts automatically: `1 Samuel` → `I Samuel`
+
+**KJV Format** - Uses Roman numerals and "Revelation of John":
+- Input: `1 Samuel`, `2 Samuel`, `Revelation`
+- Database: `I Samuel`, `II Samuel`, `Revelation of John`
+
+**NASB Format** - Uses Arabic numerals:
+- Input: `1 Samuel`, `2 Samuel`, `Revelation`
+- Database: `1 Samuel`, `2 Samuel`, `Revelation`
+
+The `normalizeBookName()` function handles automatic conversion for both formats.
 
 ## ESV Caching System
 
@@ -60,25 +85,52 @@ GET /api/scripture?reference=John%203:16&translation=esv
 ```
 
 ### How It Works
-1. Check local database (KJV) or cache (ESV)
-2. If found → Return cached result
-3. If not found → Call external API
-4. Cache result → Return to user
+1. Check local database for KJV/NASB verses
+2. If found → Return from database immediately
+3. If ESV and not found → Check cache
+4. If ESV and not cached → Call ESV API
+5. Cache result → Return to user
+
+### Verse Range Handling
+Scripture references can include verse ranges using hyphens or en-dashes:
+- `John 3:16-18` → Returns verses 16, 17, 18
+- `Isaiah 40:25–26` → Returns verses 25 and 26 (en-dash character)
+
+The parser handles both ASCII hyphens (-) and Unicode en-dashes (–) for proper formatting.
 
 ## Adding Translations
 
-To add a new translation (NASB, NIV, etc.):
-1. Acquire licensed data (if required)
-2. Create import script following KJV pattern
-3. Store in database
-4. Update scripture API logic
-5. Configure in translation settings
+To add a new translation (NIV, NRSV, etc.):
+1. Acquire licensed data in USX format or JSON structure
+2. Create import script following the KJV/NASB pattern:
+   - Parse verses into `{translation, book, chapter, verse, text}` objects
+   - Batch insert into `bible_verses` table (500 records per batch)
+3. Update translation constants in `bible-api.ts`
+4. Add book name normalization if needed in `normalizeBookName()`
+5. Configure in translation settings UI
 
 ## Performance
 
-- **KJV lookup**: <5ms (local database)
-- **Cached ESV**: <10ms (local database)
-- **Fresh ESV**: 500-2000ms (external API)
+- **Local database (KJV/NASB)**: <5ms per lookup
+- **Cached ESV**: <10ms per lookup
+- **Fresh ESV API call**: 500-2000ms
+
+## Attribution & Licensing
+
+**KJV** - Public domain
+- Source: scrollmapper/bible_databases (MIT licensed)
+- 31,102 verses
+
+**NASB** - Licensed content
+- Copyright © 1960-1995 The Lockman Foundation
+- Licensed through Digital Bible Library (DBL)
+- 31,103 verses
+- Attribution: www.lockman.org
+
+**ESV** - Licensed content
+- Copyright © 2001 by Crossway
+- Free API tier available
+- Attribution: www.esv.org
 
 ## Related Documentation
 - Full KJV details: [KJV_DATABASE.md](KJV_DATABASE.md)
