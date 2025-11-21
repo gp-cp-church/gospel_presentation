@@ -6,7 +6,7 @@ import { useTranslation } from '@/contexts/TranslationContext'
 interface ScriptureHoverModalProps {
   reference: string
   children: React.ReactNode
-  hoverDelayMs?: number // Optional hover delay in milliseconds, defaults to 1000ms
+  hoverDelayMs?: number // Optional hover delay in milliseconds, defaults to 500ms
 }
 
 interface ScriptureData {
@@ -15,7 +15,7 @@ interface ScriptureData {
   translation?: string
 }
 
-export default function ScriptureHoverModal({ reference, children, hoverDelayMs = 1000 }: ScriptureHoverModalProps) {
+export default function ScriptureHoverModal({ reference, children, hoverDelayMs = 500 }: ScriptureHoverModalProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [scriptureData, setScriptureData] = useState<ScriptureData | null>(null)
   const [loading, setLoading] = useState(false)

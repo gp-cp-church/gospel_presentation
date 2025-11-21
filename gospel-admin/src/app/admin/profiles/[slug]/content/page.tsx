@@ -1401,7 +1401,7 @@ function ContentEditPage({ params }: ContentEditPageProps) {
                                         <circle cx="6" cy="10" r="1" fill="currentColor"/>
                                       </svg>
                                     </div>
-                                    <ScriptureHoverModal reference={scripture.reference} hoverDelayMs={1000}>
+                                    <ScriptureHoverModal reference={scripture.reference} hoverDelayMs={500}>
                                       <button
                                         onClick={() => toggleScriptureFavorite(sectionIndex, subsectionIndex, scriptureIndex)}
                                         className={`inline-block px-3 py-1 text-sm rounded-md transition-colors cursor-pointer ${
@@ -1740,7 +1740,7 @@ function ContentEditPage({ params }: ContentEditPageProps) {
                                             <circle cx="4.5" cy="8.5" r="0.8" fill="currentColor"/>
                                           </svg>
                                         </div>
-                                        <ScriptureHoverModal reference={scripture.reference} hoverDelayMs={1000}>
+                                        <ScriptureHoverModal reference={scripture.reference} hoverDelayMs={500}>
                                           <button
                                             onClick={() => toggleNestedScriptureFavorite(sectionIndex, subsectionIndex, nestedIndex, scriptureIndex)}
                                             className={`inline-block px-2 py-1 text-xs rounded transition-colors cursor-pointer ${
