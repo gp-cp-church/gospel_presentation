@@ -15,21 +15,25 @@ export function ClarityProvider() {
       return
     }
 
-    // Initialize Microsoft Clarity
-    const script = document.createElement('script')
-    script.type = 'text/javascript'
-    script.async = true
-    script.src = `https://www.clarity.ms/tag/${projectId}`
-    
-    script.onload = () => {
-      console.log('Clarity loaded successfully with project ID:', projectId)
+    // Check if Clarity is already initialized (avoid double loading)
+    if ((window as any).clarity) {
+      console.log('Clarity already initialized')
+      return
     }
+
+    // Load Clarity using the standard initialization method
+    ;(function(c: any, l: any, a: string, r: string, i: string, t: any, y: any) {
+      c[a] = c[a] || function() {
+        (c[a].q = c[a].q || []).push(arguments)
+      }
+      t = l.createElement(r)
+      t.async = 1
+      t.src = 'https://www.clarity.ms/tag/' + i
+      y = l.getElementsByTagName(r)[0]
+      y.parentNode.insertBefore(t, y)
+    })(window, document, 'clarity', 'script', projectId)
     
-    script.onerror = () => {
-      console.error('Failed to load Clarity script')
-    }
-    
-    document.head.appendChild(script)
+    console.log('Clarity initialized with project ID:', projectId)
   }, [])
 
   return null
