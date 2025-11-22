@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { ClarityProvider } from "@/components/ClarityProvider";
 import { TranslationProvider } from "@/contexts/TranslationContext";
 import "./globals.css";
 
@@ -40,6 +41,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <ClarityProvider />
         <TranslationProvider>
           {children}
         </TranslationProvider>
